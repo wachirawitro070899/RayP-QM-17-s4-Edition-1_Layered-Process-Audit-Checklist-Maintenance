@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RayP Logistic Layered Process Audit Checklist</title>
+  <title>RayP Maintenance Layered Process Audit Checklist</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -44,13 +44,13 @@
 <body>
 <div class="app">
   <header class="topnav">
-    <div class="brand"><span>RayP-Manufacture<small>Layered Process Audit Checklist – Logistic</small></span></div>
+    <div class="brand"><span>RayP-Manufacture<small>Layered Process Audit Checklist – Maintenance</small></span></div>
     <div class="user-chip"><div><b>หน้าสำหรับพนักงาน</b><div class="role">กรอกและส่งผลการ Audit</div></div><a class="admin-login no-print" href="login.html">Admin Login</a></div>
   </header>
 
   <main class="page">
     <div class="page-head">
-      <div><h1>RayP Logistic Layered Process Audit Checklist</h1><p>หน้านี้ใช้สำหรับกรอกและส่งผลการ Audit เท่านั้น</p></div>
+      <div><h1>RayP Maintenance Layered Process Audit Checklist</h1><p>หน้านี้ใช้สำหรับกรอกและส่งผลการ Audit เท่านั้น</p></div>
       <div class="toolbar no-print">
         <button class="btn" id="saveBtn">บันทึกร่าง</button>
         <button class="btn" id="excelBtn">ดาวน์โหลด Excel</button>
@@ -64,7 +64,7 @@
       <input id="auditNo" type="hidden" />
       <input id="auditDate" type="hidden" />
       <div class="filters">
-        <div class="field"><label>Line / Area</label><select id="line"><option value="" selected disabled>เลือก Line / Area</option><option>Area 9 Logistic - Inbound &amp; Outbound</option><option>Area 10 Logistic - Decanting</option></select></div>
+        <div class="field"><label>Line / Area</label><select id="line"><option value="" selected disabled>เลือก Line / Area</option><option>Maintenance Workshop</option><option>Production Machine Area</option></select></div>
         <div class="field"><label>Audit Level</label><select id="level"><option value="" selected disabled>เลือก Audit Level</option><option>Level 1</option><option>Level 2</option><option>Level 3</option></select></div>
         <div class="field"><label>Auditor</label><input id="auditor" placeholder="ชื่อผู้ตรวจ" /></div>
         <div class="field"><label>Function</label><select id="unit"><option value="" selected disabled>เลือก Function</option><option>QMM</option><option>TEF</option><option>VSM</option><option>WH</option></select></div>
@@ -140,55 +140,53 @@ window.alert=function(message){
 };
 
 const sections = [
- {title:'1. OP Standardized Work / มาตรฐานการปฏิบัติงาน', items:[
-  `1.1 Is buffer station clearly defined? Are there related WIP/SOP?
-จุดที่จัดเก็บงานมีการกำหนดไว้อย่างชัดเจนหรือไม่ และมีเอกสาร WIP/SOP ระบุวิธีการปฏิบัติงานที่เกี่ยวข้องหรือไม่`,
-  `1.2 Parts piling-up status: Are parts piled up outside the buffer station?
-ชิ้นงานที่จัดเรียงซ้อนกันมีการระบุสถานะหรือไม่ และพบการวางชิ้นงานซ้อนกันนอกจุด Buffer หรือไม่`,
-  `1.3 Material handling standardized work check item
-มีการปฏิบัติตามมาตรฐานการทำงานหรือไม่ และการขนย้ายชิ้นงานมีมาตรฐานพร้อมจุดตรวจสอบหรือไม่`,
-  `1.4 Are any boxes standing around outside the specified area?
-มีการกำหนดพื้นที่จัดวางกล่องหรือไม่ และพบกล่องวางอยู่นอกพื้นที่ที่ระบุหรือไม่`,
-  `1.5 Does the material supplier feed components on time and keep the quantity above the alarm line?
-พนักงานคลังสินค้าส่งมอบวัตถุดิบเพื่อการผลิตตรงตามเวลาที่ต้องการ และมีจำนวนไม่น้อยกว่าเส้นเตือนหรือไม่`,
-  `1.6 Does the material supplier follow FIFO?
-พนักงานคลังสินค้าส่งมอบวัตถุดิบตามระบบ FIFO หรือไม่`,
-  `1.7 Does the material handler record the batch number of each material?
-พนักงานคลังสินค้ามีการบันทึกหมายเลข Batch ของวัตถุดิบแต่ละรายการหรือไม่`,
-  `1.8 Box management: Is the box clean and organized?
-กล่องบรรจุสะอาด เป็นระเบียบ และมีการจัดการที่ดีหรือไม่`,
-  `1.9 Cycle time: Does the material storage and delivery quantity comply with production cycle time?
-การจัดเก็บและจำนวนการส่งมอบวัตถุดิบสอดคล้องกับรอบการผลิตหรือไม่`,
-  `1.10 Shelf count: Is shelf counting performed according to schedule?
-มีการตรวจนับจำนวนสิ่งของที่จัดเก็บบนชั้นตามแผนอย่างสม่ำเสมอหรือไม่`,
-  `1.11 Receiving lane management: Does the receiving area have adequate tools, lighting and work surfaces?
-พื้นที่ตรวจรับวัตถุดิบมีเครื่องมือตรวจรับ แสงสว่าง พื้นผิวทำงาน และการระบุพื้นที่อย่างเหมาะสมหรือไม่`,
-  `1.12 Can component parts be tracked and traced by label identification? Check physical parts against the SAP system.
-ชิ้นงานสามารถติดตามและสอบกลับ Lot ได้จาก Label หรือไม่ และชิ้นงานจริงตรงกับข้อมูลในระบบ SAP หรือไม่`
+ {title:'1. Communication / การสื่อสาร', items:[
+  `1.1 Are employees aware of any recent formal customer complaints or quality issues?
+ผู้ที่เกี่ยวข้องรับทราบถึงปัญหางานเคลมจากลูกค้าและปัญหาคุณภาพล่าสุด รวมถึงมีความตระหนักถึงปัญหาดังกล่าวหรือไม่`
  ]},
- {title:'2. Training Standard Check Item / มาตรฐานการฝึกอบรม', items:[
-  `2.1 Is there a training plan for associates, and is training implemented according to the plan?
-มีแผนการฝึกอบรมสำหรับพนักงานทุกคนหรือไม่ และบันทึกการฝึกอบรมเป็นไปตามแผนหรือไม่`,
-  `2.2 Did the employee attend the correct training, and are individual training records and the Training Matrix current (approval not older than 6 months)?
-พนักงานเข้าร่วมการฝึกอบรมที่ถูกต้องหรือไม่ มีบันทึกรายบุคคล และ Training Matrix เป็นปัจจุบันโดยวันที่อนุมัติไม่เกิน 6 เดือนหรือไม่`,
-  `2.3 Is training effectiveness assessed periodically? Can the operator work independently according to WI/SOP, and is the inspector familiar with appearance inspection instructions?
-มีการประเมินประสิทธิผลการฝึกอบรมเป็นระยะหรือไม่ พนักงานสามารถทำงานตาม WI/SOP ได้ด้วยตนเอง และผู้ตรวจเข้าใจมาตรฐานการตรวจสอบลักษณะภายนอกหรือไม่`,
-  `2.4 Is the training record documented?
-บันทึกการฝึกอบรมมีการจัดทำและเก็บรักษาเป็นเอกสารหรือไม่`
+ {title:'2. Workplace Organization and Environment / การจัดระเบียบสถานที่ทำงานและสภาพแวดล้อม', items:[
+  `2.6 Is the workspace clean and orderly? Are the proper tools available and arranged to allow the operator to work ergonomically?
+พื้นที่การทำงานสะอาดและเป็นระเบียบเรียบร้อยหรือไม่ และมีเครื่องมือที่เหมาะสมพร้อมจัดวางให้พนักงานทำงานได้อย่างถูกต้องตามหลักการยศาสตร์หรือไม่`,
+  `2.7 Are operators wearing the required personal protective equipment (PPE)?
+พนักงานสวมใส่อุปกรณ์ป้องกันส่วนบุคคล (PPE) ตามที่กำหนดหรือไม่`,
+  `2.8 Are maintenance tools, equipment, and their storage areas properly cleaned, organized, and maintained in a safe working condition?
+เครื่องมือและอุปกรณ์ซ่อมบำรุง รวมถึงพื้นที่จัดเก็บ สะอาด เป็นระเบียบ อยู่ในสภาพพร้อมใช้งานและปลอดภัยหรือไม่`
  ]},
- {title:'3. 5S Check Item / Safety / การตรวจ 5ส และความปลอดภัย', items:[
-  `3.1 Are parts handled and moved properly using gloves, boxes, trolleys, or other specified equipment?
-มีวิธีการจับและเคลื่อนย้ายชิ้นงานอย่างเหมาะสม โดยใช้ถุงมือ กล่อง รถเข็น หรืออุปกรณ์ที่กำหนดหรือไม่`,
-  `3.2 Are logistic process parameters in line with instructions?
-กระบวนการ Logistic ดำเนินงานตามพารามิเตอร์ที่ระบุในมาตรฐานหรือไม่`,
-  `3.3 Are work stops or interruptions made when problems are found and properly recorded?
-มีการหยุดการทำงานเมื่อพบปัญหา และมีการบันทึกการหยุดหรือเหตุขัดข้องหรือไม่`
+ {title:'3. Set-up / การเตรียมและเปลี่ยนงาน', items:[
+  `3.2 Are changeover instructions followed?
+เมื่อมีการเปลี่ยนรุ่นการผลิต มีการปฏิบัติตามมาตรฐานและคำแนะนำการเปลี่ยนรุ่นที่กำหนดหรือไม่`,
+  `3.4 Have appropriate corrective actions for non-compliant features been documented and standardized?
+เมื่อพบสิ่งที่ไม่เป็นไปตามข้อกำหนด มีการดำเนินการแก้ไข บันทึกผล และกำหนดเป็นมาตรฐานหรือไม่`
  ]},
- {title:'4. Layered Process Audit (LPA) / การตรวจติดตามแบบลำดับชั้น', items:[
-  `4.1 Are Layered Process Audits performed? Check the previous LPA report and any open issues.
-มีการทำ Layered Process Audit และตรวจสอบปัญหาที่ยังไม่ปิดจากรายงาน Audit ครั้งก่อนหรือไม่`,
-  `4.2 Are corrective actions for open points from previous LPAs planned and followed up? Is there an action follow-up list?
-มีแผนแก้ไขและติดตามปัญหาที่ยังไม่ปิดจาก LPA ครั้งก่อน พร้อมรายการติดตาม Action หรือไม่`
+ {title:'4. Qualification (Habilitation) / คุณสมบัติและความสามารถ', items:[
+  `4.1 Are operators following standardized work?
+พนักงานปฏิบัติงานตามมาตรฐานการทำงานหรือไม่`,
+  `4.2 Are operators certified for their current jobs, with training records available and matching their assigned work?
+มีบันทึกการฝึกอบรมและการรับรองของผู้ปฏิบัติงาน และตรงกับงานที่ปฏิบัติอยู่ในปัจจุบันหรือไม่`,
+  `4.3 Is an up-to-date competence matrix available?
+มีตารางระบุความสามารถของพนักงาน (Competence Matrix) และข้อมูลเป็นปัจจุบันหรือไม่`
+ ]},
+ {title:'7. Measurement Systems / SPC / ระบบการวัดและ SPC', items:[
+  `7.1 Are error-proofing devices, gauges, and fixtures verified and recorded at the designated frequency?
+อุปกรณ์ป้องกันความผิดพลาด เกจ และฟิกเจอร์ ได้รับการทวนสอบและบันทึกตามความถี่ที่กำหนดหรือไม่`,
+  `7.2 Are all maintenance tools available at the designated workstation and in usable condition?
+เครื่องมือที่ใช้ในงานซ่อมบำรุงมีอยู่ในพื้นที่ที่กำหนดและอยู่ในสภาพพร้อมใช้งานหรือไม่`,
+  `7.4 Does the operator understand the intended function of the Poka-Yoke device?
+พนักงานเข้าใจวัตถุประสงค์และการทำงานของอุปกรณ์ Poka-Yoke หรือไม่`
+ ]},
+ {title:'9. Man / บุคลากร', items:[
+  `9.1 Are maintenance activities completed according to schedule?
+งานซ่อมบำรุงดำเนินการเสร็จตามแผนซ่อมบำรุงหรือไม่`
+ ]},
+ {title:'10. Layered Process Audit (LPA) / การตรวจติดตามแบบลำดับชั้น', items:[
+  `10.1 Are Layered Process Audits (LPA) performed? Check the previous LPA report and any open issues.
+มีการทำ Layered Process Audit (LPA) และตรวจสอบปัญหาที่ยังไม่ปิดจากการ Audit ครั้งก่อนหรือไม่`,
+  `10.2 Are corrective actions for open points from previous LPAs planned and followed up? Is an action follow-up list available?
+มีการวางแผน ดำเนินการ และติดตามการแก้ไขปัญหาจาก LPA ครั้งก่อน พร้อมรายการติดตามการแก้ไขหรือไม่`
+ ]},
+ {title:'11. Other / อื่น ๆ', items:[
+  `11.1 Does Maintenance perform inspections according to the Daily Check Sheet (for example, BEKO Split Machine and high-pressure air compressor)?
+ฝ่าย Maintenance มีการตรวจสอบตาม Daily Check Sheet หรือไม่ เช่น BEKO Split Machine และเครื่องอัดอากาศแรงดันสูง (High-pressure Air Compressor)`
  ]}
 ];
 
