@@ -64,11 +64,11 @@
       <input id="auditNo" type="hidden" />
       <input id="auditDate" type="hidden" />
       <div class="filters">
-        <div class="field"><label>Line / Area</label><select id="line"><option value="" selected disabled>เลือก Line / Area</option><option>Maintenance Workshop</option><option>Production Machine Area</option></select></div>
+        <div class="field"><label>Line / Area</label><select id="line"><option selected>Area 12 Maintenance</option></select></div>
         <div class="field"><label>Audit Level</label><select id="level"><option value="" selected disabled>เลือก Audit Level</option><option>Level 1</option><option>Level 2</option><option>Level 3</option></select></div>
         <div class="field"><label>Auditor</label><input id="auditor" placeholder="ชื่อผู้ตรวจ" /></div>
         <div class="field"><label>Function</label><select id="unit"><option value="" selected disabled>เลือก Function</option><option>QMM</option><option>TEF</option><option>VSM</option><option>WH</option></select></div>
-        <div class="field"><label>Auditee</label><input id="auditee" placeholder="ชื่อผู้รับการตรวจ" /></div>
+        <div class="field"><label>Auditee</label><input id="auditee" value="Wutthipat Sintu" readonly /></div>
       </div>
       <div class="saved" id="savedMsg"></div>
     </section>
@@ -293,11 +293,11 @@ function resetAuditForm(){
   Object.keys(state.images).forEach(k=>delete state.images[k]);
   document.getElementById('auditNo').value=newAuditNo();
   document.getElementById('auditDate').value=todayLocal();
-  document.getElementById('line').selectedIndex=0;
+  document.getElementById('line').value='Area 12 Maintenance';
   document.getElementById('level').selectedIndex=0;
   document.getElementById('auditor').value='';
   document.getElementById('unit').selectedIndex=0;
-  document.getElementById('auditee').value='';
+  document.getElementById('auditee').value='Wutthipat Sintu';
   document.getElementById('savedMsg').textContent='พร้อมเริ่มกรอก Audit รายการใหม่';
   renderTable();
   updatePrintMeta();
