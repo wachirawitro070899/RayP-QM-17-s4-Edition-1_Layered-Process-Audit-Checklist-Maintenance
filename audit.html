@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RayP Logistic Layered Process Audit Checklist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <style>
+    :root{--nav:#7f1d1d;--blue:#dc2626;--bg:#fff7f7;--card:#fff;--text:#2b1717;--muted:#785f5f;--line:#ead6d6;--green:#16a34a;--amber:#d97706;--red:#dc2626;--soft:#fff5f5}
+    *{box-sizing:border-box} body{margin:0;font-family:'Noto Sans Thai',sans-serif;background:var(--bg);color:var(--text)}
+    .app{min-height:100vh}.topnav{height:68px;background:linear-gradient(90deg,var(--nav),#b91c1c);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:20;box-shadow:0 3px 12px rgba(127,29,29,.2)}
+    .brand{font-weight:700;font-size:18px;display:flex;align-items:center}.brand small{display:block;color:#fee2e2;font-size:11px;font-weight:500}.user-chip{display:flex;align-items:center;gap:10px;font-size:13px}.avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:#fee2e2;color:#991b1b;font-weight:700}.role{color:#fecaca;font-size:11px}.admin-login{border:1px solid rgba(255,255,255,.55);background:rgba(255,255,255,.12);color:#fff;border-radius:8px;padding:8px 12px;text-decoration:none;font-size:12px;font-weight:600}.admin-login:hover{background:rgba(255,255,255,.22)}
+    .page{max-width:1480px;margin:auto;padding:22px}.page-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:16px}.page-head h1{margin:0;font-size:26px}.page-head p{margin:4px 0 0;color:var(--muted);font-size:13px}.toolbar{display:flex;flex-wrap:wrap;gap:8px}.btn{border:1px solid var(--line);border-radius:9px;background:#fff;height:40px;padding:0 14px;font:inherit;font-size:13px;cursor:pointer}.btn.primary,.btn.success{background:var(--blue);color:#fff;border-color:var(--blue)}.btn:hover{filter:brightness(.98)}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 5px 16px rgba(127,29,29,.06);margin-bottom:14px}.card-title{font-weight:700;margin-bottom:12px;color:#991b1b}.filters{display:grid;grid-template-columns:repeat(6,minmax(140px,1fr));gap:12px}.field label{display:block;font-size:12px;font-weight:600;color:#6b3030;margin-bottom:5px}.field input,.field select{width:100%;height:40px;border:1px solid var(--line);border-radius:8px;padding:0 10px;font:inherit;background:#fff}.field input:focus,.field select:focus,.comment:focus,.custom-q:focus{outline:2px solid #fecaca;border-color:#ef4444}
+    .summary{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}.metric{border:1px solid var(--line);background:var(--soft);border-radius:10px;padding:11px}.metric span{display:block;font-size:11px;color:var(--muted)}.metric b{font-size:20px}.progress-track{height:8px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin-top:7px}.progress-track i{display:block;height:100%;background:var(--blue);width:0}
+    .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px}.audit-table{border-collapse:separate;border-spacing:0;width:100%;min-width:1050px;font-size:12px}.audit-table th,.audit-table td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:9px 8px;vertical-align:top}.audit-table th:last-child,.audit-table td:last-child{border-right:0}.audit-table tr:last-child td{border-bottom:0}.audit-table thead th{position:static;background:#7f1d1d;color:#fff;text-align:center;vertical-align:middle}.audit-table th.question{min-width:520px;text-align:left}.audit-table th.comment{min-width:290px}.section-row td{background:#fee2e2;font-weight:700;color:#991b1b;padding:10px}.qtext{line-height:1.55;min-height:34px;white-space:pre-line;overflow-wrap:anywhere}.subitem{padding-left:24px;color:#6b3030}.comment{width:100%;min-height:54px;resize:vertical;border:1px solid var(--line);border-radius:7px;padding:7px;font:inherit;font-size:12px}.choice{text-align:center;vertical-align:middle!important;min-width:62px}.choice input{display:none}.choice label{display:inline-grid;place-items:center;min-width:40px;height:34px;border:1px solid var(--line);border-radius:9px;background:#fff;cursor:pointer;font-weight:600}.choice input:checked+label{border-color:#dc2626;background:#fee2e2;box-shadow:0 0 0 2px #fecaca inset}.choice.na input:checked+label{background:#e2e8f0;border-color:#64748b}.choice.ok input:checked+label{background:#dcfce7;border-color:#22c55e}.choice.observe input:checked+label{background:#fef3c7;border-color:#f59e0b}.choice.ng input:checked+label{background:#fee2e2;border-color:#ef4444}.custom-q{width:100%;border:1px dashed #b98a8a;border-radius:7px;padding:8px;font:inherit;font-size:12px;background:#fff}.hint{font-size:11px;color:var(--muted);margin-top:8px}.saved{font-size:12px;color:var(--green);min-height:18px;margin-top:8px}
+    .print-title{display:none}
+    .summary-card{display:none!important}
+    .submit-footer{display:flex;justify-content:flex-end;padding-top:16px}.submit-footer .btn{min-width:220px;height:48px;font-size:15px;font-weight:700}
+    .evidence-tools{display:flex;align-items:center;gap:8px;margin-top:7px}.evidence-input{display:none}.evidence-add,.evidence-remove{border:1px solid var(--line);border-radius:7px;background:#fff;padding:6px 9px;font:inherit;font-size:11px;cursor:pointer}.evidence-remove{color:var(--red)}.evidence-preview{display:block;max-width:150px;max-height:100px;margin-top:7px;border:1px solid var(--line);border-radius:8px;object-fit:cover}
+    @media(max-width:1050px){.filters{grid-template-columns:repeat(3,1fr)}.summary{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:700px){
+      .topnav{height:auto;min-height:68px;padding:10px 12px;position:static;display:grid;grid-template-columns:1fr auto;gap:8px}.brand{font-size:15px}.brand small{font-size:10px}.user-chip>div{display:none}.admin-login{white-space:nowrap;padding:7px 9px}
+      .page{padding:10px}.page-head{flex-direction:column}.page-head h1{font-size:22px}.filters{grid-template-columns:1fr}.summary{grid-template-columns:1fr 1fr}.toolbar{width:100%;display:grid;grid-template-columns:1fr 1fr}.btn{width:100%;padding:0 8px}.card{padding:10px;border-radius:12px}
+      .table-wrap{overflow:visible;border:0}.audit-table{display:block;min-width:0;width:100%;font-size:15px}.audit-table thead{display:none}.audit-table tbody{display:block}.audit-table tr{display:block}
+      .audit-table .section-row{margin:18px 0 8px}.audit-table .section-row:first-child{margin-top:0}.audit-table .section-row td{display:block;border:0;border-radius:10px;padding:12px;font-size:17px;overflow-wrap:anywhere}
+      .audit-table tr:not(.section-row){display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 0 12px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff}
+      .audit-table tr:not(.section-row) td{border:0;padding:0;min-width:0}.audit-table tr:not(.section-row) td:first-child,.audit-table tr:not(.section-row) td:last-child{grid-column:1/-1}.qtext,.subitem{padding-left:0;line-height:1.6;white-space:normal;overflow-wrap:anywhere;word-break:break-word}.comment{min-height:64px;font-size:15px}.choice{min-width:0!important}.choice label{width:100%;min-width:0;height:42px}.custom-q{font-size:15px}
+    }
+    @media print{
+      @page{size:A4 landscape;margin:8mm}.topnav,.page-head,.no-print,.summary-card{display:none!important}body{background:#fff}.page{padding:0;max-width:none}.card{box-shadow:none;border:0;padding:0;margin:0}.print-title{display:block;text-align:center;margin-bottom:8px}.print-title h2{margin:0;font-size:15px}.print-meta{font-size:9px;margin-top:4px}.table-wrap{overflow:visible;border:1px solid #444;border-radius:0}.audit-table{min-width:0;font-size:7.5px}.audit-table thead th{position:static;background:#eee!important;color:#000!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.audit-table th,.audit-table td{padding:3px;border-color:#777}.section-row td{background:#ddd!important;color:#000!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.comment{border:0;min-height:18px;padding:0}.custom-q{border:0;padding:0}.choice label{border:0;min-width:20px;height:18px}.choice input:not(:checked)+label{color:#bbb}.choice input:checked+label{font-weight:700;background:transparent!important;box-shadow:none}.hint{display:none}}
+
+    .evaluation-rating{margin-top:14px;border:1px solid #333;background:#fff;overflow:hidden}.evaluation-title{text-align:center;font-weight:700;font-size:14px;padding:7px;border-bottom:1px solid #333;background:#e7b6b6}.evaluation-grid{display:grid;grid-template-columns:185px 205px 1fr}.evaluation-cell{border-right:1px solid #333;border-bottom:1px solid #333;padding:7px 9px;font-size:11px;line-height:1.35}.evaluation-grid .evaluation-cell:nth-child(3n){border-right:0}.evaluation-grid .evaluation-cell:nth-last-child(-n+3){border-bottom:0}.evaluation-score{display:flex;align-items:center;justify-content:center;text-align:center;font-weight:700;font-size:13px;background:#f8e8e8}.evaluation-status{display:flex;align-items:center;justify-content:center;text-align:center;font-weight:700;font-size:12px}.evaluation-desc{font-style:italic;display:flex;align-items:center}.evaluation-green{background:#8cff51;color:#000}.evaluation-yellow{background:#fff600;color:#000}.evaluation-red{background:#ff1208;color:#000}.evaluation-live{display:flex;align-items:center;justify-content:center;gap:8px;border-top:1px solid #333;padding:9px 12px;font-weight:800;font-size:14px}.evaluation-live strong{font-size:18px}.evaluation-live.green{background:#8cff51}.evaluation-live.yellow{background:#fff600}.evaluation-live.red{background:#ff1208}.evaluation-live.neutral{background:#f3f4f6}.evaluation-cell b{font-size:12px}@media(max-width:700px){.evaluation-grid{grid-template-columns:88px 120px 1fr}.evaluation-cell{font-size:9px;padding:6px}.evaluation-score{font-size:11px}.evaluation-live{font-size:12px}.evaluation-live strong{font-size:16px}}@media print{.evaluation-rating{break-inside:avoid;margin-top:6px}.evaluation-title{font-size:8px;padding:3px}.evaluation-cell{font-size:6px;padding:3px}.evaluation-score{font-size:7px}.evaluation-live{font-size:7px;padding:4px}.evaluation-live strong{font-size:8px}.evaluation-green,.evaluation-yellow,.evaluation-red,.evaluation-title,.evaluation-live{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="topnav">
+    <div class="brand"><span>RayP-Manufacture<small>Layered Process Audit Checklist – Logistic</small></span></div>
+    <div class="user-chip"><div><b>หน้าสำหรับพนักงาน</b><div class="role">กรอกและส่งผลการ Audit</div></div><a class="admin-login no-print" href="login.html">Admin Login</a></div>
+  </header>
+
+  <main class="page">
+    <div class="page-head">
+      <div><h1>RayP Logistic Layered Process Audit Checklist</h1><p>หน้านี้ใช้สำหรับกรอกและส่งผลการ Audit เท่านั้น</p></div>
+      <div class="toolbar no-print">
+        <button class="btn" id="saveBtn">บันทึกร่าง</button>
+        <button class="btn" id="excelBtn">ดาวน์โหลด Excel</button>
+        <button class="btn" id="pdfBtn">ดาวน์โหลด PDF</button>
+        <button class="btn primary" id="printBtn">พิมพ์</button>
+      </div>
+    </div>
+
+    <section class="card no-print">
+      <div class="card-title">ข้อมูลผู้ตรวจและงาน Audit</div>
+      <input id="auditNo" type="hidden" />
+      <input id="auditDate" type="hidden" />
+      <div class="filters">
+        <div class="field"><label>Line / Area</label><select id="line"><option value="" selected disabled>เลือก Line / Area</option><option>Area 9 Logistic - Inbound &amp; Outbound</option><option>Area 10 Logistic - Decanting</option></select></div>
+        <div class="field"><label>Audit Level</label><select id="level"><option value="" selected disabled>เลือก Audit Level</option><option>Level 1</option><option>Level 2</option><option>Level 3</option></select></div>
+        <div class="field"><label>Auditor</label><input id="auditor" placeholder="ชื่อผู้ตรวจ" /></div>
+        <div class="field"><label>Function</label><select id="unit"><option value="" selected disabled>เลือก Function</option><option>QMM</option><option>TEF</option><option>VSM</option><option>WH</option></select></div>
+        <div class="field"><label>Auditee</label><input id="auditee" placeholder="ชื่อผู้รับการตรวจ" /></div>
+      </div>
+      <div class="saved" id="savedMsg"></div>
+    </section>
+
+    <section class="card summary-card no-print">
+      <div class="summary">
+        <div class="metric"><span>รายการทั้งหมด</span><b id="mTotal">0</b></div>
+        <div class="metric"><span>ตอบแล้ว</span><b id="mAnswered">0</b><div class="progress-track"><i id="progressBar"></i></div></div>
+        <div class="metric"><span>😊 OK</span><b id="mOk">0</b></div>
+        <div class="metric"><span>😐 Observation</span><b id="mObserve">0</b></div>
+        <div class="metric"><span>😒 NG</span><b id="mNg">0</b></div>
+      </div>
+    </section>
+
+    <section class="card" id="printArea">
+      <div class="print-title"><h2>Layered Process Audit (LPA)</h2><div class="print-meta" id="printMeta"></div></div>
+      <div class="table-wrap">
+        <table class="audit-table">
+          <thead><tr><th class="question">QUESTION</th><th>N/A</th><th>😊</th><th>😐</th><th>😒</th><th class="comment">COMMENTS</th></tr></thead>
+          <tbody id="auditBody"></tbody>
+        </table>
+      </div>
+
+      <section class="evaluation-rating" id="evaluationRating">
+        <div class="evaluation-title">Evaluation rating &nbsp;&nbsp; (If issues found, corrective actions must be always implemented)</div>
+        <div class="evaluation-grid">
+          <div class="evaluation-cell evaluation-score">&ge; 90%</div>
+          <div class="evaluation-cell evaluation-status evaluation-green">Acceptable</div>
+          <div class="evaluation-cell evaluation-desc evaluation-green">Acceptable (less than 4 "unsatisfactory", or less than 7 "corrected", or any equivalent combination)</div>
+
+          <div class="evaluation-cell evaluation-score">&ge; 75% &amp; &lt; 90%</div>
+          <div class="evaluation-cell evaluation-status evaluation-yellow">Acceptable<br>with restrictions</div>
+          <div class="evaluation-cell evaluation-desc evaluation-yellow">New LPA should be performed to verify the actions implementation in maximum 24 hours. This new LPA should be considered as Unacceptable if is rated again as Yellow.</div>
+
+          <div class="evaluation-cell evaluation-score">&lt; 75%</div>
+          <div class="evaluation-cell evaluation-status evaluation-red">Unacceptable</div>
+          <div class="evaluation-cell evaluation-desc evaluation-red">over 8 "unsatisfactory", or equivalent combination, Internal process audit must be scheduled and performed.</div>
+        </div>
+        <div class="evaluation-live neutral" id="evaluationLive">Current score: <strong id="evaluationPercent">0.0%</strong></div>
+      </section>
+      
+<div class="hint no-print">เลือกผลได้ 1 ค่า/ข้อ สามารถบันทึกร่างไว้ในเครื่อง หรือกด “ส่งข้อมูล” เพื่อบันทึกเข้าระบบหลังบ้าน</div>
+      <div class="submit-footer no-print"><button class="btn success" id="submitBtn">ส่งข้อมูล</button></div>
+    </section>
+  </main>
+</div>
+<script>
+
+// Public audit page: no login/session is required.
+
+// Replace every browser-native alert with an in-page dialog so the browser does not show the domain name.
+window.alert=function(message){
+  const existing=document.getElementById('lpaAlertOverlay');
+  if(existing)existing.remove();
+  const overlay=document.createElement('div');
+  overlay.id='lpaAlertOverlay';
+  overlay.setAttribute('role','alertdialog');
+  overlay.setAttribute('aria-modal','true');
+  overlay.style.cssText='position:fixed;inset:0;z-index:10000;background:rgba(43,23,23,.45);display:grid;place-items:center;padding:20px';
+  const box=document.createElement('div');
+  box.style.cssText='width:min(460px,100%);background:#fff;border-radius:16px;box-shadow:0 18px 50px rgba(0,0,0,.28);padding:24px;text-align:center';
+  const icon=document.createElement('div');icon.textContent='📋';icon.style.cssText='font-size:42px;line-height:1;margin-bottom:12px';
+  const text=document.createElement('div');text.textContent=String(message==null?'':message);text.style.cssText='white-space:pre-line;font-size:16px;line-height:1.65;font-weight:600;color:#2b1717;margin-bottom:20px';
+  const button=document.createElement('button');button.type='button';button.textContent='ตกลง';button.style.cssText='border:0;border-radius:9px;background:#7f1d1d;color:#fff;font:inherit;font-weight:700;padding:10px 30px;cursor:pointer';
+  const close=()=>{overlay.remove();document.removeEventListener('keydown',onKey)};
+  const onKey=e=>{if(e.key==='Escape'||e.key==='Enter')close()};
+  button.addEventListener('click',close);overlay.addEventListener('click',e=>{if(e.target===overlay)close()});document.addEventListener('keydown',onKey);
+  box.append(icon,text,button);overlay.appendChild(box);document.body.appendChild(overlay);button.focus();
+};
+
+const sections = [
+ {title:'1. OP Standardized Work / มาตรฐานการปฏิบัติงาน', items:[
+  `1.1 Is buffer station clearly defined? Are there related WIP/SOP?
+จุดที่จัดเก็บงานมีการกำหนดไว้อย่างชัดเจนหรือไม่ และมีเอกสาร WIP/SOP ระบุวิธีการปฏิบัติงานที่เกี่ยวข้องหรือไม่`,
+  `1.2 Parts piling-up status: Are parts piled up outside the buffer station?
+ชิ้นงานที่จัดเรียงซ้อนกันมีการระบุสถานะหรือไม่ และพบการวางชิ้นงานซ้อนกันนอกจุด Buffer หรือไม่`,
+  `1.3 Material handling standardized work check item
+มีการปฏิบัติตามมาตรฐานการทำงานหรือไม่ และการขนย้ายชิ้นงานมีมาตรฐานพร้อมจุดตรวจสอบหรือไม่`,
+  `1.4 Are any boxes standing around outside the specified area?
+มีการกำหนดพื้นที่จัดวางกล่องหรือไม่ และพบกล่องวางอยู่นอกพื้นที่ที่ระบุหรือไม่`,
+  `1.5 Does the material supplier feed components on time and keep the quantity above the alarm line?
+พนักงานคลังสินค้าส่งมอบวัตถุดิบเพื่อการผลิตตรงตามเวลาที่ต้องการ และมีจำนวนไม่น้อยกว่าเส้นเตือนหรือไม่`,
+  `1.6 Does the material supplier follow FIFO?
+พนักงานคลังสินค้าส่งมอบวัตถุดิบตามระบบ FIFO หรือไม่`,
+  `1.7 Does the material handler record the batch number of each material?
+พนักงานคลังสินค้ามีการบันทึกหมายเลข Batch ของวัตถุดิบแต่ละรายการหรือไม่`,
+  `1.8 Box management: Is the box clean and organized?
+กล่องบรรจุสะอาด เป็นระเบียบ และมีการจัดการที่ดีหรือไม่`,
+  `1.9 Cycle time: Does the material storage and delivery quantity comply with production cycle time?
+การจัดเก็บและจำนวนการส่งมอบวัตถุดิบสอดคล้องกับรอบการผลิตหรือไม่`,
+  `1.10 Shelf count: Is shelf counting performed according to schedule?
+มีการตรวจนับจำนวนสิ่งของที่จัดเก็บบนชั้นตามแผนอย่างสม่ำเสมอหรือไม่`,
+  `1.11 Receiving lane management: Does the receiving area have adequate tools, lighting and work surfaces?
+พื้นที่ตรวจรับวัตถุดิบมีเครื่องมือตรวจรับ แสงสว่าง พื้นผิวทำงาน และการระบุพื้นที่อย่างเหมาะสมหรือไม่`,
+  `1.12 Can component parts be tracked and traced by label identification? Check physical parts against the SAP system.
+ชิ้นงานสามารถติดตามและสอบกลับ Lot ได้จาก Label หรือไม่ และชิ้นงานจริงตรงกับข้อมูลในระบบ SAP หรือไม่`
+ ]},
+ {title:'2. Training Standard Check Item / มาตรฐานการฝึกอบรม', items:[
+  `2.1 Is there a training plan for associates, and is training implemented according to the plan?
+มีแผนการฝึกอบรมสำหรับพนักงานทุกคนหรือไม่ และบันทึกการฝึกอบรมเป็นไปตามแผนหรือไม่`,
+  `2.2 Did the employee attend the correct training, and are individual training records and the Training Matrix current (approval not older than 6 months)?
+พนักงานเข้าร่วมการฝึกอบรมที่ถูกต้องหรือไม่ มีบันทึกรายบุคคล และ Training Matrix เป็นปัจจุบันโดยวันที่อนุมัติไม่เกิน 6 เดือนหรือไม่`,
+  `2.3 Is training effectiveness assessed periodically? Can the operator work independently according to WI/SOP, and is the inspector familiar with appearance inspection instructions?
+มีการประเมินประสิทธิผลการฝึกอบรมเป็นระยะหรือไม่ พนักงานสามารถทำงานตาม WI/SOP ได้ด้วยตนเอง และผู้ตรวจเข้าใจมาตรฐานการตรวจสอบลักษณะภายนอกหรือไม่`,
+  `2.4 Is the training record documented?
+บันทึกการฝึกอบรมมีการจัดทำและเก็บรักษาเป็นเอกสารหรือไม่`
+ ]},
+ {title:'3. 5S Check Item / Safety / การตรวจ 5ส และความปลอดภัย', items:[
+  `3.1 Are parts handled and moved properly using gloves, boxes, trolleys, or other specified equipment?
+มีวิธีการจับและเคลื่อนย้ายชิ้นงานอย่างเหมาะสม โดยใช้ถุงมือ กล่อง รถเข็น หรืออุปกรณ์ที่กำหนดหรือไม่`,
+  `3.2 Are logistic process parameters in line with instructions?
+กระบวนการ Logistic ดำเนินงานตามพารามิเตอร์ที่ระบุในมาตรฐานหรือไม่`,
+  `3.3 Are work stops or interruptions made when problems are found and properly recorded?
+มีการหยุดการทำงานเมื่อพบปัญหา และมีการบันทึกการหยุดหรือเหตุขัดข้องหรือไม่`
+ ]},
+ {title:'4. Layered Process Audit (LPA) / การตรวจติดตามแบบลำดับชั้น', items:[
+  `4.1 Are Layered Process Audits performed? Check the previous LPA report and any open issues.
+มีการทำ Layered Process Audit และตรวจสอบปัญหาที่ยังไม่ปิดจากรายงาน Audit ครั้งก่อนหรือไม่`,
+  `4.2 Are corrective actions for open points from previous LPAs planned and followed up? Is there an action follow-up list?
+มีแผนแก้ไขและติดตามปัญหาที่ยังไม่ปิดจาก LPA ครั้งก่อน พร้อมรายการติดตาม Action หรือไม่`
+ ]}
+];
+
+const state = { answers:{}, comments:{}, custom:{}, images:{} };
+const metaIds=['auditNo','auditDate','line','level','auditor','unit','auditee'];
+function todayLocal(){const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)}
+function newAuditNo(){const d=new Date(),p=n=>String(n).padStart(2,'0');return `LPA-${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`}
+document.getElementById('auditNo').value=newAuditNo();
+document.getElementById('auditDate').value=todayLocal();
+
+function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function renderTable(){
+ let html='', idx=0;
+ sections.forEach(sec=>{
+   html += `<tr class="section-row"><td colspan="6">${esc(sec.title)}</td></tr>`;
+   const items = sec.items || Array.from({length:sec.custom},(_,i)=>'');
+   items.forEach((q,i)=>{
+     const id='q'+idx; const sub=q.trim().startsWith('-'); const isCustom=!sec.items;
+     const qHtml=isCustom?`<input class="custom-q" data-id="${id}" value="${esc(state.custom[id]||'')}" placeholder="10.${i+1} เพิ่มรายการตรวจเฉพาะพื้นที่">`:`<div class="qtext ${sub?'subitem':''}">${esc(q)}</div>`;
+     const image=state.images[id]||'';
+     html += `<tr data-qid="${id}"><td>${qHtml}</td>${choiceCell(id,'na','N/A','na')}${choiceCell(id,'ok','😊','ok')}${choiceCell(id,'observe','😐','observe')}${choiceCell(id,'ng','😒','ng')}<td><textarea class="comment" data-id="${id}" placeholder="Comments / หลักฐาน">${esc(state.comments[id]||'')}</textarea><div class="evidence-tools"><label class="evidence-add" for="image_${id}">📷 แนบรูป</label><input class="evidence-input" id="image_${id}" data-id="${id}" type="file" accept="image/*" capture="environment">${image?`<button class="evidence-remove" type="button" data-remove-image="${id}">ลบรูป</button>`:''}</div>${image?`<img class="evidence-preview" src="${image}" alt="รูปหลักฐาน">`:''}</td></tr>`;
+     idx++;
+  });
+ });
+ document.getElementById('auditBody').innerHTML=html;
+ bindRows(); updateSummary();
+}
+function choiceCell(id,value,label,cls){const checked=state.answers[id]===value?'checked':'';return `<td class="choice ${cls}"><input type="radio" name="${id}" id="${id}_${value}" value="${value}" ${checked}><label for="${id}_${value}">${label}</label></td>`}
+function bindRows(){
+ document.querySelectorAll('input[type=radio]').forEach(el=>el.addEventListener('change',e=>{state.answers[e.target.name]=e.target.value;updateSummary();autoSave()}));
+ document.querySelectorAll('.comment').forEach(el=>el.addEventListener('input',e=>{state.comments[e.target.dataset.id]=e.target.value;debouncedSave()}));
+ document.querySelectorAll('.custom-q').forEach(el=>el.addEventListener('input',e=>{state.custom[e.target.dataset.id]=e.target.value;debouncedSave()}));
+ document.querySelectorAll('.evidence-input').forEach(el=>el.addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{state.images[e.target.dataset.id]=await compressImage(file);save(false);renderTable()}catch(err){alert(err.message||'แนบรูปไม่สำเร็จ')}}));
+ document.querySelectorAll('[data-remove-image]').forEach(el=>el.addEventListener('click',e=>{delete state.images[e.currentTarget.dataset.removeImage];save(false);renderTable()}));
+}
+function compressImage(file){return new Promise((resolve,reject)=>{if(!file.type.startsWith('image/'))return reject(new Error('กรุณาเลือกไฟล์รูปภาพ'));const reader=new FileReader();reader.onerror=()=>reject(new Error('อ่านรูปไม่สำเร็จ'));reader.onload=()=>{const img=new Image();img.onerror=()=>reject(new Error('รูปภาพไม่ถูกต้อง'));img.onload=()=>{const max=1280,scale=Math.min(1,max/Math.max(img.width,img.height)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);const data=canvas.toDataURL('image/jpeg',.7);if(data.length>700000)return reject(new Error('รูปมีขนาดใหญ่เกินไป กรุณาเลือกรูปอื่น'));resolve(data)};img.src=reader.result};reader.readAsDataURL(file)})}
+function totalItems(){return sections.reduce((n,s)=>n+(s.items?s.items.length:s.custom),0)}
+function scorePercent(vals=Object.values(state.answers)){const ok=vals.filter(v=>v==='ok').length,observe=vals.filter(v=>v==='observe').length,ng=vals.filter(v=>v==='ng').length,scored=ok+observe+ng;return scored?Math.round(((ok*2+observe)/(scored*2))*1000)/10:0}
+function updateSummary(){const vals=Object.values(state.answers);const t=totalItems(),a=vals.length;document.getElementById('mTotal').textContent=t;document.getElementById('mAnswered').textContent=a;document.getElementById('mOk').textContent=vals.filter(v=>v==='ok').length;document.getElementById('mObserve').textContent=vals.filter(v=>v==='observe').length;document.getElementById('mNg').textContent=vals.filter(v=>v==='ng').length;document.getElementById('progressBar').style.width=(t?a/t*100:0)+'%';const score=scorePercent(vals);const pct=document.getElementById('evaluationPercent');const live=document.getElementById('evaluationLive');if(pct)pct.textContent=score.toFixed(1)+'%';if(live){live.classList.remove('green','yellow','red','neutral');const scored=vals.some(v=>v==='ok'||v==='observe'||v==='ng');live.classList.add(!scored?'neutral':score>=90?'green':score>=75?'yellow':'red')}}
+function meta(){return Object.fromEntries(metaIds.map(id=>[id,document.getElementById(id).value]))}
+function storageKey(){return 'lpaAudit:'+((document.getElementById('auditNo').value||'draft').trim())}
+function save(show=true){try{localStorage.setItem(storageKey(),JSON.stringify({meta:meta(),state,updatedAt:new Date().toISOString()}))}catch(e){if(show)alert('พื้นที่บันทึกร่างในเครื่องเต็ม กรุณาลดจำนวนรูป')}if(show){const el=document.getElementById('savedMsg');el.textContent='บันทึกร่างแล้วในเครื่องนี้';setTimeout(()=>el.textContent='',2200)}}
+let timer;function debouncedSave(){clearTimeout(timer);timer=setTimeout(()=>save(false),500)} function autoSave(){save(false)}
+function loadCurrent(){const raw=localStorage.getItem(storageKey());if(!raw)return;try{const d=JSON.parse(raw);Object.assign(state.answers,d.state?.answers||{});Object.assign(state.comments,d.state?.comments||{});Object.assign(state.custom,d.state?.custom||{});Object.assign(state.images,d.state?.images||{});if(d.meta)metaIds.forEach(id=>{if(d.meta[id]!=null)document.getElementById(id).value=d.meta[id]});renderTable()}catch(e){console.warn(e)}}
+
+function questionMap(){
+  const out={}; let idx=0;
+  sections.forEach(sec=>{
+    const items=sec.items||Array.from({length:sec.custom},(_,i)=>state.custom['q'+(idx+i)]||`10.${i+1}`);
+    items.forEach(q=>{out['q'+idx]=q;idx++});
+ });
+  return out;
+}
+function requiredQuestionIds(){
+  const ids=[]; let idx=0;
+  sections.forEach(sec=>{
+    if(sec.items){sec.items.forEach(()=>ids.push('q'+idx++));}
+    else{for(let i=0;i<sec.custom;i++){const id='q'+idx++;if((state.custom[id]||'').trim())ids.push(id)}}
+ });
+  return ids;
+}
+function showSubmitSuccess(){
+  const overlay=document.createElement('div');
+  overlay.setAttribute('role','dialog');
+  overlay.setAttribute('aria-modal','true');
+  overlay.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(43,23,23,.42);display:grid;place-items:center;padding:20px';
+  overlay.innerHTML='<div style="width:min(430px,100%);background:#fff;border-radius:16px;box-shadow:0 18px 50px rgba(0,0,0,.25);padding:24px;text-align:center"><div style="font-size:44px;line-height:1">✅</div><div style="font-size:18px;font-weight:700;margin:14px 0 20px;color:#2b1717">ส่งข้อมูลให้ Admin เรียบร้อยแล้วครับ/ค่ะ</div><button type="button" style="border:0;border-radius:9px;background:#7f1d1d;color:#fff;font:inherit;font-weight:700;padding:10px 28px;cursor:pointer">ตกลง</button></div>';
+  const close=()=>overlay.remove();
+  overlay.querySelector('button').addEventListener('click',close);
+  overlay.addEventListener('click',e=>{if(e.target===overlay)close()});
+  document.addEventListener('keydown',function onKey(e){if(e.key==='Escape'||e.key==='Enter'){document.removeEventListener('keydown',onKey);close()}});
+  document.body.appendChild(overlay);
+  overlay.querySelector('button').focus();
+}
+
+async function submitAudit(){
+  document.getElementById('auditDate').value=todayLocal();
+  const m=meta();
+  const missingMeta=metaIds.filter(id=>!String(m[id]||'').trim());
+  if(missingMeta.length){alert('กรุณากรอกข้อมูลส่วนหัวให้ครบถ้วน');return}
+  const required=requiredQuestionIds();
+  const unanswered=required.filter(id=>!state.answers[id]);
+  if(unanswered.length){alert(`ยังมีรายการที่ไม่ได้เลือกผล ${unanswered.length} ข้อ กรุณาตอบให้ครบก่อนส่งข้อมูล`);return}
+  const vals=Object.values(state.answers);
+  const score=scorePercent(vals);
+  const payload={meta:m,state:{answers:state.answers,comments:state.comments,custom:state.custom,images:state.images,questions:questionMap()},summary:{total:required.length,answered:required.length,ok:vals.filter(v=>v==='ok').length,observe:vals.filter(v=>v==='observe').length,ng:vals.filter(v=>v==='ng').length,na:vals.filter(v=>v==='na').length,scorePercent:score}};
+  if(JSON.stringify(payload).length>7000000){alert('รูปหลักฐานรวมมีขนาดใหญ่เกินไป กรุณาลบบางรูปก่อนส่ง');return}
+  const btn=document.getElementById('submitBtn');btn.disabled=true;btn.textContent='กำลังส่ง...';
+  try{
+    if(!window.firebase)throw new Error('โหลด Firebase ไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ต');
+    if(!firebase.apps.length)firebase.initializeApp(window.LPA_FIREBASE_CONFIG);
+    const ref=firebase.database().ref('logisticLpaAudits').push();
+    await ref.set({id:ref.key,createdAt:new Date().toISOString(),...payload});
+    localStorage.removeItem(storageKey());
+    showSubmitSuccess();
+    resetAuditForm();
+  }catch(e){alert(e.message)}finally{btn.disabled=false;btn.textContent='ส่งข้อมูล'}
+}
+
+function resetAuditForm(){
+  Object.keys(state.answers).forEach(k=>delete state.answers[k]);
+  Object.keys(state.comments).forEach(k=>delete state.comments[k]);
+  Object.keys(state.custom).forEach(k=>delete state.custom[k]);
+  Object.keys(state.images).forEach(k=>delete state.images[k]);
+  document.getElementById('auditNo').value=newAuditNo();
+  document.getElementById('auditDate').value=todayLocal();
+  document.getElementById('line').selectedIndex=0;
+  document.getElementById('level').selectedIndex=0;
+  document.getElementById('auditor').value='';
+  document.getElementById('unit').selectedIndex=0;
+  document.getElementById('auditee').value='';
+  document.getElementById('savedMsg').textContent='พร้อมเริ่มกรอก Audit รายการใหม่';
+  renderTable();
+  updatePrintMeta();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function rowsForExport(){let rows=[];let idx=0;sections.forEach(sec=>{rows.push([sec.title,'','','','','']);const items=sec.items||Array.from({length:sec.custom},(_,i)=>state.custom['q'+(idx+i)]||`10.${i+1}`);items.forEach(q=>{const id='q'+idx;const ans=state.answers[id]||'';rows.push([q,ans==='na'?'X':'',ans==='ok'?'X':'',ans==='observe'?'X':'',ans==='ng'?'X':'',state.comments[id]||'']);idx++})});return rows}
+function exportExcel(){
+ const m=meta();const info=[['Layered Process Audit (LPA)','','','','',''],['Audit No.',m.auditNo,'Date',m.auditDate,'Function',m.unit],['Line / Area',m.line,'Level',m.level,'Auditor',m.auditor],['Auditee',m.auditee,'','','',''],[],['QUESTION','N/A','😊','😐','😒','COMMENTS'],...rowsForExport()];
+ const ws=XLSX.utils.aoa_to_sheet(info);ws['!cols']=[{wch:85},{wch:9},{wch:9},{wch:9},{wch:9},{wch:42}];ws['!merges']=[XLSX.utils.decode_range('A1:F1')];
+ const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'LPA');XLSX.writeFile(wb,`${safeName(m.auditNo||'LPA_Audit')}.xlsx`);
+}
+function updatePrintMeta(){const m=meta();document.getElementById('printMeta').textContent=`Audit No.: ${m.auditNo||'-'}  |  Date: ${m.auditDate||'-'}  |  Line: ${m.line||'-'}  |  Level: ${m.level||'-'}  |  Auditor: ${m.auditor||'-'}  |  Function: ${m.unit||'-'}  |  Auditee: ${m.auditee||'-'}`}
+async function exportPDF(){
+ updatePrintMeta();const node=document.getElementById('printArea');const {jsPDF}=window.jspdf;const canvas=await html2canvas(node,{scale:1.6,backgroundColor:'#ffffff',useCORS:true,windowWidth:node.scrollWidth});
+ const pdf=new jsPDF('l','mm','a4');const pageW=297,pageH=210,margin=7,usableW=pageW-margin*2,usableH=pageH-margin*2;const imgW=usableW;const imgH=canvas.height*imgW/canvas.width;let y=0,page=0;
+ while(y<imgH){if(page>0)pdf.addPage();const offset=-y+margin;pdf.addImage(canvas.toDataURL('image/jpeg',0.92),'JPEG',margin,offset,imgW,imgH);y+=usableH;page++}
+ pdf.save(`${safeName(document.getElementById('auditNo').value||'LPA_Audit')}.pdf`);
+}
+function safeName(s){return String(s).replace(/[\\/:*?"<>|]/g,'_')}
+
+document.getElementById('saveBtn').addEventListener('click',()=>save(true));document.getElementById('submitBtn').addEventListener('click',submitAudit);document.getElementById('excelBtn').addEventListener('click',exportExcel);document.getElementById('pdfBtn').addEventListener('click',exportPDF);document.getElementById('printBtn').addEventListener('click',()=>{updatePrintMeta();window.print()});
+metaIds.slice(1).forEach(id=>document.getElementById(id).addEventListener('change',debouncedSave));
+renderTable();loadCurrent();updatePrintMeta();
+</script>
+</body>
+</html>
