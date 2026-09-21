@@ -273,6 +273,14 @@ async function submitAudit(){
   const required=requiredQuestionIds();
   const unanswered=required.filter(id=>!state.answers[id]);
   if(unanswered.length){alert(`ยังมีรายการที่ไม่ได้เลือกผล ${unanswered.length} ข้อ กรุณาตอบให้ครบก่อนส่งข้อมูล`);return}
+  const ncWithoutImages=required.filter(id=>state.answers[id]==='ng'&&!state.images[id]);
+  if(ncWithoutImages.length){
+    alert(`รายการที่เลือก 😒 NC ต้องแนบรูปหลักฐานทุกข้อ\nยังขาดรูป ${ncWithoutImages.length} ข้อ กรุณาแนบรูปก่อนส่งข้อมูล`);
+    const firstMissing=document.querySelector(`tr[data-qid="${ncWithoutImages[0]}"]`);
+    firstMissing?.scrollIntoView({behavior:'smooth',block:'center'});
+    firstMissing?.querySelector('.evidence-add')?.focus();
+    return;
+  }
   const vals=Object.values(state.answers);
   const score=scorePercent(vals);
   const payload={meta:m,state:{answers:state.answers,comments:state.comments,custom:state.custom,images:state.images,questions:questionMap()},summary:{total:required.length,answered:required.length,ok:vals.filter(v=>v==='ok').length,observe:vals.filter(v=>v==='observe').length,ng:vals.filter(v=>v==='ng').length,na:vals.filter(v=>v==='na').length,scorePercent:score}};
