@@ -13,7 +13,7 @@ window.LPA_FIREBASE_CONFIG = {
   function installProcedureTitle(){
     const main=document.querySelector('main.page');if(!main)return;
     let title=document.getElementById('procedureMainTitle');
-    if(!title){title=document.createElement('div');title.id='procedureMainTitle';title.innerHTML='<div style="font-size:20px;font-weight:800;letter-spacing:.2px">SUPPLEMENT TO PROCEDURE DESCRIPTION - CBI QM-17 s1</div><div style="font-size:16px;font-weight:600;margin-top:3px">Layered Process Audit Checklist - Manufacturing</div>';}
+    if(!title){title=document.createElement('div');title.id='procedureMainTitle';title.innerHTML='<div style="font-size:20px;font-weight:800;letter-spacing:.2px">SUPPLEMENT TO PROCEDURE DESCRIPTION - RayP QM-17 s3</div><div style="font-size:16px;font-weight:600;margin-top:3px">Layered Process Audit Checklist - Maintenance</div>';}
     title.style.cssText='background:#fff;color:#111;text-align:center;padding:14px 16px 12px;margin:0 0 16px;border:1px solid #ead6d6;border-radius:10px;line-height:1.35';
     const pageHead=main.querySelector('.page-head');
     if(pageHead)pageHead.insertAdjacentElement('afterend',title);else main.insertBefore(title,main.firstChild);
