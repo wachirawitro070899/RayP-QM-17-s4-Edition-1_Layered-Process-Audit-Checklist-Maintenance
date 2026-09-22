@@ -987,7 +987,8 @@ function startAuditNotifications(databasePath,auditLabel){
 
   function notifyNewAudit(item){
     unread+=1;
-    badge.textContent='🔔 Audit ใหม่ '+unread+' รายการ';
+    const auditorName=String((item.meta||{}).auditor||'ไม่ระบุชื่อ');
+    badge.textContent='🔔 '+auditorName+' ส่ง Audit ใหม่ ('+unread+')';
     badge.style.background='#dc2626';
     document.title='('+unread+') Audit ใหม่ – '+auditLabel;
 
@@ -998,7 +999,7 @@ function startAuditNotifications(databasePath,auditLabel){
     toast.id='newAuditToast';
     toast.setAttribute('role','alert');
     toast.style.cssText='position:fixed;top:86px;right:18px;z-index:9001;width:min(390px,calc(100vw - 36px));background:#fff;border:2px solid #dc2626;border-radius:14px;padding:16px;box-shadow:0 16px 40px #0004;color:#2b1717';
-    toast.innerHTML='<div style="font-size:17px;font-weight:800;color:#991b1b;margin-bottom:7px">🔔 มี Layered Audit ใหม่ – '+auditLabel+'</div>'+
+    toast.innerHTML='<div style="font-size:17px;font-weight:800;color:#991b1b;margin-bottom:7px">🔔 Audit ใหม่จาก Auditor: '+escapeNotificationText(meta.auditor||'ไม่ระบุชื่อ')+'</div>'+
       '<div style="font-size:13px;line-height:1.65">Area: <b>'+escapeNotificationText(meta.line||'-')+'</b><br>Auditor: <b>'+escapeNotificationText(meta.auditor||'-')+'</b><br>Score: <b>'+escapeNotificationText(summary.scorePercent==null?'-':summary.scorePercent+'%')+'</b> · NC: <b>'+escapeNotificationText(summary.ng||0)+'</b></div>'+
       '<button type="button" style="margin-top:11px;border:0;border-radius:8px;background:#7f1d1d;color:#fff;padding:8px 16px;font:inherit;font-weight:700;cursor:pointer">รับทราบ</button>';
     toast.querySelector('button').addEventListener('click',()=>toast.remove());
