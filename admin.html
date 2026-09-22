@@ -1118,8 +1118,15 @@ function startAuditNotifications(databasePath,auditLabel){
     if(polling)return;
     polling=true;
     try{
-      const snapshot=await realtimeDatabase.ref(databasePath).once('value');
-      const values=snapshot.val()||{};
+      const databaseUrl=String(window.LPA_FIREBASE_CONFIG?.databaseURL||'').replace(/\/$/,'');
+      if(!databaseUrl)throw new Error('ไม่พบ Firebase Database URL');
+      const response=await fetch(databaseUrl+'/'+encodeURIComponent(databasePath)+'.json?_='+Date.now(),{
+        method:'GET',
+        cache:'no-store',
+        headers:{'Cache-Control':'no-cache'}
+      });
+      if(!response.ok)throw new Error('Firebase REST '+response.status);
+      const values=await response.json()||{};
       Object.entries(values)
         .sort(([,first],[,second])=>String(first?.createdAt||'').localeCompare(String(second?.createdAt||'')))
         .forEach(([id,value])=>processNewAudit(id,value,true));
@@ -1130,8 +1137,10 @@ function startAuditNotifications(databasePath,auditLabel){
     }
   }
 
-  setInterval(pollForNewAudits,5000);
+  pollForNewAudits();
+  setInterval(pollForNewAudits,3000);
   window.addEventListener('focus',pollForNewAudits);
+  window.addEventListener('online',pollForNewAudits);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)pollForNewAudits()});
 }
 
