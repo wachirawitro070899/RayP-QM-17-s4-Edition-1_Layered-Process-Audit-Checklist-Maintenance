@@ -597,7 +597,9 @@ function render() {
     searchInput.value.trim().toLowerCase();
 
   const filteredItems = items.filter(item => {
-    const meta = getMeta(item);
+    if (window.markCurrentAuditSeen) window.markCurrentAuditSeen(id);
+
+  const meta = getMeta(item);
 
     return [
       meta.auditNo,
@@ -968,41 +970,114 @@ boot().catch(error => {
 function startAuditNotifications(databasePath,auditLabel){
   if(window.__lpaNotificationStarted)return;
   window.__lpaNotificationStarted=true;
-  const knownIds=new Set(items.map(item=>String(item.id||'')));
+
+  const storageKey='maintenanceLpaSeenAuditIdsV1';
   const originalTitle=document.title;
-  let unread=0;
+  const currentIds=items.map(item=>String(item.id||'')).filter(Boolean);
+  let storedIds=null;
+  try{storedIds=JSON.parse(localStorage.getItem(storageKey)||'null')}catch(error){storedIds=null}
+  const seenIds=new Set(Array.isArray(storedIds)?storedIds:currentIds);
+  if(!Array.isArray(storedIds))saveSeenIds();
+
+  let unreadItems=items
+    .filter(item=>item.id&&!seenIds.has(String(item.id)))
+    .sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
 
   const badge=document.createElement('button');
   badge.type='button';
   badge.id='newAuditBadge';
-  badge.textContent='🔔 ไม่มี Audit ใหม่';
   badge.style.cssText='position:fixed;right:18px;bottom:18px;z-index:9000;border:0;border-radius:999px;background:#7f1d1d;color:#fff;padding:12px 17px;font:inherit;font-weight:700;box-shadow:0 8px 24px #0003;cursor:pointer';
-  badge.addEventListener('click',()=>{
-    unread=0;
-    badge.textContent='🔔 ไม่มี Audit ใหม่';
-    badge.style.background='#7f1d1d';
-    document.title=originalTitle;
+
+  const panel=document.createElement('section');
+  panel.id='manufacturingNotificationCenter';
+  panel.style.cssText='display:none;position:fixed;right:18px;bottom:72px;z-index:9000;width:min(480px,calc(100vw - 36px));max-height:min(650px,72vh);overflow:hidden;background:#fff;border:1px solid #ead6d6;border-radius:16px;box-shadow:0 18px 50px #0004;color:#2b1717';
+  panel.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;background:#7f1d1d;color:#fff"><div><b>🔔 Audit ที่ยังไม่เปิดดู</b><div id="notificationSummary" style="font-size:11px;color:#fecaca"></div></div><button id="markAllAuditRead" type="button" style="border:1px solid #fff8;background:#fff1;color:#fff;border-radius:8px;padding:7px 10px;cursor:pointer">เปิดดูแล้วทั้งหมด</button></div><div id="unreadAuditList" style="max-height:calc(min(650px,72vh) - 70px);overflow:auto"></div>';
+
+  document.body.append(panel,badge);
+  const unreadList=panel.querySelector('#unreadAuditList');
+  const notificationSummary=panel.querySelector('#notificationSummary');
+
+  function saveSeenIds(){
+    try{localStorage.setItem(storageKey,JSON.stringify(Array.from(seenIds).slice(-2000)))}catch(error){console.warn('บันทึกสถานะแจ้งเตือนไม่สำเร็จ',error)}
+  }
+
+  function safe(value){
+    return String(value==null?'':value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  }
+
+  function formatSentAt(value){
+    if(!value)return '-';
+    const date=new Date(value);
+    return Number.isNaN(date.getTime())?String(value):date.toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'});
+  }
+
+  function updateNotificationCenter(){
+    unreadItems=unreadItems
+      .filter(item=>item.id&&!seenIds.has(String(item.id)))
+      .sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+    const count=unreadItems.length;
+    badge.textContent=count?'🔔 Audit ยังไม่เปิดดู '+count+' รายการ':'🔔 ไม่มี Audit ใหม่';
+    badge.style.background=count?'#dc2626':'#7f1d1d';
+    document.title=count?'('+count+') Audit ยังไม่เปิดดู – Maintenance':originalTitle;
+    notificationSummary.textContent=count+' รายการ';
+
+    if(!count){
+      unreadList.innerHTML='<div style="padding:28px;text-align:center;color:#785f5f">ไม่มีรายการที่ยังไม่เปิดดู</div>';
+      return;
+    }
+
+    unreadList.innerHTML=unreadItems.map(item=>{
+      const meta=item.meta||{},summary=item.summary||{};
+      const score=summary.scorePercent==null?'-':summary.scorePercent+'%';
+      const nc=Number(summary.ng||0);
+      return '<button type="button" data-audit-id="'+safe(item.id)+'" style="display:block;width:100%;border:0;border-bottom:1px solid #ead6d6;background:#fff;padding:13px 16px;text-align:left;cursor:pointer;font:inherit">'+
+        '<div style="display:flex;justify-content:space-between;gap:10px"><b style="color:#991b1b">Auditor: '+safe(meta.auditor||'ไม่ระบุชื่อ')+'</b><span style="font-size:11px;color:#785f5f;white-space:nowrap">'+safe(formatSentAt(item.createdAt))+'</span></div>'+
+        '<div style="font-size:13px;margin-top:5px"><b>Area:</b> '+safe(meta.line||'-')+'</div>'+
+        '<div style="font-size:12px;color:#785f5f;margin-top:4px">คะแนน '+safe(score)+' · <span style="color:'+(nc?'#dc2626':'#15803d')+'">NC '+nc+'</span> · Auditee '+safe(meta.auditee||'-')+'</div>'+
+        '<div style="font-size:12px;color:#2563eb;margin-top:6px;font-weight:700">กดเพื่อดูรายละเอียด →</div></button>';
+    }).join('');
+  }
+
+  function markSeen(id){
+    const key=String(id||'');
+    if(!key)return;
+    seenIds.add(key);
+    saveSeenIds();
+    updateNotificationCenter();
+  }
+  window.markCurrentAuditSeen=markSeen;
+
+  unreadList.addEventListener('click',event=>{
+    const button=event.target.closest('[data-audit-id]');
+    if(!button)return;
+    const id=button.dataset.auditId;
+    markSeen(id);
+    panel.style.display='none';
+    viewAudit(id);
   });
-  document.body.appendChild(badge);
 
-  function notifyNewAudit(item){
-    unread+=1;
-    const auditorName=String((item.meta||{}).auditor||'ไม่ระบุชื่อ');
-    badge.textContent='🔔 '+auditorName+' ส่ง Audit ใหม่ ('+unread+')';
-    badge.style.background='#dc2626';
-    document.title='('+unread+') Audit ใหม่ – '+auditLabel;
+  panel.querySelector('#markAllAuditRead').addEventListener('click',()=>{
+    unreadItems.forEach(item=>seenIds.add(String(item.id)));
+    saveSeenIds();
+    updateNotificationCenter();
+  });
 
+  badge.addEventListener('click',()=>{
+    panel.style.display=panel.style.display==='none'?'block':'none';
+  });
+
+  function showNewAuditPopup(item){
+    const meta=item.meta||{},summary=item.summary||{};
     const oldToast=document.getElementById('newAuditToast');
     if(oldToast)oldToast.remove();
-    const meta=item.meta||{},summary=item.summary||{};
     const toast=document.createElement('div');
     toast.id='newAuditToast';
     toast.setAttribute('role','alert');
-    toast.style.cssText='position:fixed;top:86px;right:18px;z-index:9001;width:min(390px,calc(100vw - 36px));background:#fff;border:2px solid #dc2626;border-radius:14px;padding:16px;box-shadow:0 16px 40px #0004;color:#2b1717';
-    toast.innerHTML='<div style="font-size:17px;font-weight:800;color:#991b1b;margin-bottom:7px">🔔 Audit ใหม่จาก Auditor: '+escapeNotificationText(meta.auditor||'ไม่ระบุชื่อ')+'</div>'+
-      '<div style="font-size:13px;line-height:1.65">Area: <b>'+escapeNotificationText(meta.line||'-')+'</b><br>Auditor: <b>'+escapeNotificationText(meta.auditor||'-')+'</b><br>Score: <b>'+escapeNotificationText(summary.scorePercent==null?'-':summary.scorePercent+'%')+'</b> · NC: <b>'+escapeNotificationText(summary.ng||0)+'</b></div>'+
-      '<button type="button" style="margin-top:11px;border:0;border-radius:8px;background:#7f1d1d;color:#fff;padding:8px 16px;font:inherit;font-weight:700;cursor:pointer">รับทราบ</button>';
-    toast.querySelector('button').addEventListener('click',()=>toast.remove());
+    toast.style.cssText='position:fixed;top:86px;right:18px;z-index:9001;width:min(420px,calc(100vw - 36px));background:#fff;border:2px solid #dc2626;border-radius:14px;padding:16px;box-shadow:0 16px 40px #0004;color:#2b1717';
+    toast.innerHTML='<div style="font-size:17px;font-weight:800;color:#991b1b;margin-bottom:7px">🔔 Audit ใหม่จาก Auditor: '+safe(meta.auditor||'ไม่ระบุชื่อ')+'</div>'+
+      '<div style="font-size:13px;line-height:1.65">Area: <b>'+safe(meta.line||'-')+'</b><br>Score: <b>'+safe(summary.scorePercent==null?'-':summary.scorePercent+'%')+'</b> · NC: <b>'+safe(summary.ng||0)+'</b></div>'+
+      '<button type="button" data-open-new-audit style="margin-top:11px;border:0;border-radius:8px;background:#7f1d1d;color:#fff;padding:8px 16px;font:inherit;font-weight:700;cursor:pointer">เปิดดู Audit</button>';
+    toast.querySelector('[data-open-new-audit]').addEventListener('click',()=>{toast.remove();markSeen(item.id);viewAudit(item.id)});
     document.body.appendChild(toast);
     setTimeout(()=>toast.remove(),15000);
 
@@ -1016,20 +1091,20 @@ function startAuditNotifications(databasePath,auditLabel){
     }catch(error){console.debug('Notification sound unavailable',error)}
   }
 
-  function escapeNotificationText(value){
-    return String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-  }
+  updateNotificationCenter();
 
-  const database=(typeof db==='function')?db():getDatabase();
-  database.ref(databasePath).on('child_added',snapshot=>{
+  const realtimeDatabase=(typeof db==='function')?db():getDatabase();
+  realtimeDatabase.ref(databasePath).on('child_added',snapshot=>{
     const id=String(snapshot.key||'');
-    if(knownIds.has(id))return;
-    knownIds.add(id);
+    if(currentIds.includes(id))return;
+    currentIds.push(id);
     const item={...(snapshot.val()||{}),id};
     items.unshift(item);
-    items.sort((first,second)=>String(second.createdAt||'').localeCompare(String(first.createdAt||'')));
+    items.sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+    if(!seenIds.has(id))unreadItems.push(item);
     render();
-    notifyNewAudit(item);
+    updateNotificationCenter();
+    showNewAuditPopup(item);
   },error=>console.error('Audit notification error',error));
 }
 
