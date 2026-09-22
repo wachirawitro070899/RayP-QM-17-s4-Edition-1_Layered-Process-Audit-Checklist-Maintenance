@@ -389,7 +389,7 @@ dialog::backdrop{
       <input
         id="search"
         type="search"
-        placeholder="ค้นหา หน่วยงาน, Line, Auditor, Auditee"
+        placeholder="ค้นหา Audit No., หน่วยงาน, Area, Level, Auditor, Auditee"
       >
 
       <button
@@ -597,9 +597,7 @@ function render() {
     searchInput.value.trim().toLowerCase();
 
   const filteredItems = items.filter(item => {
-    if (window.markCurrentAuditSeen) window.markCurrentAuditSeen(id);
-
-  const meta = getMeta(item);
+    const meta = getMeta(item);
 
     return [
       meta.auditNo,
@@ -787,6 +785,8 @@ async function viewAudit(id) {
     alert("ไม่พบข้อมูล");
     return;
   }
+
+  if (window.markCurrentAuditSeen) window.markCurrentAuditSeen(id);
 
   const meta = getMeta(item);
   const state = getState(item);
