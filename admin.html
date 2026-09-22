@@ -536,6 +536,7 @@ async function boot() {
     "เข้าสู่ระบบโดย " + adminName;
 
   await loadAudits();
+  startAuditNotifications('logisticLpaAudits','Maintenance');
 }
 
 async function loadAudits() {
@@ -963,6 +964,74 @@ boot().catch(error => {
     );
   }
 });
+
+function startAuditNotifications(databasePath,auditLabel){
+  if(window.__lpaNotificationStarted)return;
+  window.__lpaNotificationStarted=true;
+  const knownIds=new Set(items.map(item=>String(item.id||'')));
+  const originalTitle=document.title;
+  let unread=0;
+
+  const badge=document.createElement('button');
+  badge.type='button';
+  badge.id='newAuditBadge';
+  badge.textContent='🔔 ไม่มี Audit ใหม่';
+  badge.style.cssText='position:fixed;right:18px;bottom:18px;z-index:9000;border:0;border-radius:999px;background:#7f1d1d;color:#fff;padding:12px 17px;font:inherit;font-weight:700;box-shadow:0 8px 24px #0003;cursor:pointer';
+  badge.addEventListener('click',()=>{
+    unread=0;
+    badge.textContent='🔔 ไม่มี Audit ใหม่';
+    badge.style.background='#7f1d1d';
+    document.title=originalTitle;
+  });
+  document.body.appendChild(badge);
+
+  function notifyNewAudit(item){
+    unread+=1;
+    badge.textContent='🔔 Audit ใหม่ '+unread+' รายการ';
+    badge.style.background='#dc2626';
+    document.title='('+unread+') Audit ใหม่ – '+auditLabel;
+
+    const oldToast=document.getElementById('newAuditToast');
+    if(oldToast)oldToast.remove();
+    const meta=item.meta||{},summary=item.summary||{};
+    const toast=document.createElement('div');
+    toast.id='newAuditToast';
+    toast.setAttribute('role','alert');
+    toast.style.cssText='position:fixed;top:86px;right:18px;z-index:9001;width:min(390px,calc(100vw - 36px));background:#fff;border:2px solid #dc2626;border-radius:14px;padding:16px;box-shadow:0 16px 40px #0004;color:#2b1717';
+    toast.innerHTML='<div style="font-size:17px;font-weight:800;color:#991b1b;margin-bottom:7px">🔔 มี Layered Audit ใหม่ – '+auditLabel+'</div>'+
+      '<div style="font-size:13px;line-height:1.65">Area: <b>'+escapeNotificationText(meta.line||'-')+'</b><br>Auditor: <b>'+escapeNotificationText(meta.auditor||'-')+'</b><br>Score: <b>'+escapeNotificationText(summary.scorePercent==null?'-':summary.scorePercent+'%')+'</b> · NC: <b>'+escapeNotificationText(summary.ng||0)+'</b></div>'+
+      '<button type="button" style="margin-top:11px;border:0;border-radius:8px;background:#7f1d1d;color:#fff;padding:8px 16px;font:inherit;font-weight:700;cursor:pointer">รับทราบ</button>';
+    toast.querySelector('button').addEventListener('click',()=>toast.remove());
+    document.body.appendChild(toast);
+    setTimeout(()=>toast.remove(),15000);
+
+    try{
+      const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+      if(AudioContextClass){
+        const audioContext=new AudioContextClass(),oscillator=audioContext.createOscillator(),gain=audioContext.createGain();
+        oscillator.connect(gain);gain.connect(audioContext.destination);oscillator.frequency.value=880;gain.gain.value=.06;
+        oscillator.start();oscillator.stop(audioContext.currentTime+.18);
+      }
+    }catch(error){console.debug('Notification sound unavailable',error)}
+  }
+
+  function escapeNotificationText(value){
+    return String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  }
+
+  const database=(typeof db==='function')?db():getDatabase();
+  database.ref(databasePath).on('child_added',snapshot=>{
+    const id=String(snapshot.key||'');
+    if(knownIds.has(id))return;
+    knownIds.add(id);
+    const item={...(snapshot.val()||{}),id};
+    items.unshift(item);
+    items.sort((first,second)=>String(second.createdAt||'').localeCompare(String(first.createdAt||'')));
+    render();
+    notifyNewAudit(item);
+  },error=>console.error('Audit notification error',error));
+}
+
 </script>
 
 </body>
