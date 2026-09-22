@@ -1094,18 +1094,45 @@ function startAuditNotifications(databasePath,auditLabel){
   updateNotificationCenter();
 
   const realtimeDatabase=(typeof db==='function')?db():getDatabase();
-  realtimeDatabase.ref(databasePath).on('child_added',snapshot=>{
-    const id=String(snapshot.key||'');
-    if(currentIds.includes(id))return;
-    currentIds.push(id);
-    const item={...(snapshot.val()||{}),id};
+
+  function processNewAudit(id,value,showPopup=true){
+    const key=String(id||'');
+    if(!key||currentIds.includes(key))return false;
+    currentIds.push(key);
+    const item={...(value||{}),id:key};
     items.unshift(item);
     items.sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
-    if(!seenIds.has(id))unreadItems.push(item);
+    if(!seenIds.has(key))unreadItems.push(item);
     render();
     updateNotificationCenter();
-    showNewAuditPopup(item);
-  },error=>console.error('Audit notification error',error));
+    if(showPopup)showNewAuditPopup(item);
+    return true;
+  }
+
+  realtimeDatabase.ref(databasePath).on('child_added',snapshot=>{
+    processNewAudit(snapshot.key,snapshot.val(),true);
+  },error=>console.error('Audit realtime notification error',error));
+
+  let polling=false;
+  async function pollForNewAudits(){
+    if(polling)return;
+    polling=true;
+    try{
+      const snapshot=await realtimeDatabase.ref(databasePath).once('value');
+      const values=snapshot.val()||{};
+      Object.entries(values)
+        .sort(([,first],[,second])=>String(first?.createdAt||'').localeCompare(String(second?.createdAt||'')))
+        .forEach(([id,value])=>processNewAudit(id,value,true));
+    }catch(error){
+      console.error('Audit auto refresh error',error);
+    }finally{
+      polling=false;
+    }
+  }
+
+  setInterval(pollForNewAudits,5000);
+  window.addEventListener('focus',pollForNewAudits);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)pollForNewAudits()});
 }
 
 </script>
