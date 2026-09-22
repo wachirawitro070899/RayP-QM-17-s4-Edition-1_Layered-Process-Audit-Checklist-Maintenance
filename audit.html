@@ -219,7 +219,7 @@ function renderTable(){
 }
 function choiceCell(id,value,label,cls){const checked=state.answers[id]===value?'checked':'';return `<td class="choice ${cls}"><input type="radio" name="${id}" id="${id}_${value}" value="${value}" ${checked}><label for="${id}_${value}">${label}</label></td>`}
 function bindRows(){
- document.querySelectorAll('input[type=radio]').forEach(el=>el.addEventListener('change',e=>{const id=e.target.name;state.answers[id]=e.target.value;updateSummary();autoSave();if(e.target.value==='ng'&&!state.images[id]){document.getElementById(`image_${id}`)?.click()}}));
+ document.querySelectorAll('input[type=radio]').forEach(el=>el.addEventListener('change',e=>{const id=e.target.name;state.answers[id]=e.target.value;updateSummary();autoSave();renderTable()}));
  document.querySelectorAll('.comment').forEach(el=>el.addEventListener('input',e=>{state.comments[e.target.dataset.id]=e.target.value;debouncedSave()}));
  document.querySelectorAll('.custom-q').forEach(el=>el.addEventListener('input',e=>{state.custom[e.target.dataset.id]=e.target.value;debouncedSave()}));
  document.querySelectorAll('.evidence-input').forEach(el=>el.addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{state.images[e.target.dataset.id]=await compressImage(file);save(false);renderTable()}catch(err){alert(err.message||'แนบรูปไม่สำเร็จ')}}));
