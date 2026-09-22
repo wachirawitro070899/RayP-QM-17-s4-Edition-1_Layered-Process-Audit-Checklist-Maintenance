@@ -1,15 +1,974 @@
-<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin - RayP Logistic Layered Process Audit Checklist</title><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet"><style>
-:root{--nav:#7f1d1d;--blue:#dc2626;--bg:#fff7f7;--line:#ead6d6;--muted:#785f5f;--red:#dc2626}*{box-sizing:border-box}body{margin:0;font-family:'Noto Sans Thai',sans-serif;background:var(--bg);color:#2b1717}.nav{min-height:68px;background:linear-gradient(90deg,var(--nav),#b91c1c);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:12px 24px;gap:16px}.wrap{max-width:1320px;margin:auto;padding:24px}.btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 13px;cursor:pointer;font:inherit}.primary{background:var(--blue);color:#fff;border-color:var(--blue)}.danger{color:var(--red)}.muted{color:var(--muted);font-size:13px}.actions{display:flex;gap:8px;flex-wrap:wrap}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}.card{background:#fff;box-shadow:0 5px 16px rgba(127,29,29,.06);border:1px solid var(--line);border-radius:14px;padding:16px}.card span{display:block;color:var(--muted);font-size:12px}.card b{font-size:25px}.panel{background:#fff;box-shadow:0 5px 16px rgba(127,29,29,.06);border:1px solid var(--line);border-radius:14px;padding:16px}.toolbar{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-bottom:12px}.toolbar input{width:min(430px,100%);height:40px;border:1px solid var(--line);border-radius:8px;padding:0 10px;font:inherit}.table-wrap{overflow:auto}table{border-collapse:collapse;width:100%;min-width:1000px;font-size:12px}th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#fee2e2;color:#7f1d1d}.tag{display:inline-block;padding:3px 7px;border-radius:999px;background:#fff1f2}.right{text-align:right}.empty{text-align:center;padding:38px;color:var(--muted)}dialog{width:min(980px,94vw);border:0;border-radius:16px;padding:0;box-shadow:0 30px 80px #0003}dialog::backdrop{background:#0f172a99}.modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line)}.modal-body{padding:18px;max-height:76vh;overflow:auto}.meta-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px 16px;margin-bottom:14px}.signature-section{margin:16px 0;border:1px solid var(--line);border-radius:12px;padding:14px;background:#fffafa}.signature-section-title{font-weight:700;color:#7f1d1d;margin-bottom:10px}.signature-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.signature-card{border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff;text-align:center}.signature-card b{display:block;margin-bottom:7px}.signature-image{display:block;width:100%;height:120px;object-fit:contain;border:1px dashed #d7bcbc;border-radius:8px;background:#fff}.signature-missing{height:120px;display:grid;place-items:center;border:1px dashed #d7bcbc;border-radius:8px;color:var(--muted);font-size:12px}@media(max-width:600px){.signature-grid{grid-template-columns:1fr}}.question{padding:10px 0;border-bottom:1px solid #f3dada}.answer{font-weight:700}.ok{color:#15803d}.observe{color:#b45309}.ng{color:#b91c1c}.na{color:#64748b}.nav-brand{display:flex;align-items:center}@media(max-width:760px){.cards{grid-template-columns:1fr 1fr}.meta-grid{grid-template-columns:1fr}.wrap{padding:12px}.nav{padding:12px}.toolbar{align-items:stretch;flex-direction:column}}</style><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script><script src="firebase-config.js"></script></head><body><div class="nav"><div class="nav-brand"><div><b>RayP-Manufacture ADMIN</b><div style="font-size:11px;color:#fecaca">ระบบหลังบ้าน · ต้อง Login</div></div></div><div class="actions"><button class="btn" onclick="location.href='audit.html'">เปิดหน้ากรอกข้อมูล</button><button class="btn" id="logout">ออกจากระบบ</button></div></div><main class="wrap"><h1 style="margin-bottom:3px">รายการ Process Audit</h1><p class="muted" id="who">กำลังตรวจสอบสิทธิ์...</p><div class="cards"><div class="card"><span>รายการทั้งหมด</span><b id="cTotal">0</b></div><div class="card"><span>OK รวม</span><b id="cOk">0</b></div><div class="card"><span>Observation รวม</span><b id="cObs">0</b></div><div class="card"><span>NG รวม</span><b id="cNg">0</b></div></div><section class="panel"><div class="toolbar"><input id="search" placeholder="ค้นหา หน่วยงาน, Line, Auditor, Auditee"><button class="btn primary" id="refresh">รีเฟรช</button></div><div class="table-wrap"><table><thead><tr><th>วันเวลาที่ส่ง</th><th>วันที่ Audit</th><th>หน่วยงาน</th><th>Line / Area</th><th>Level</th><th>Auditor</th><th>ผล</th><th class="right">จัดการ</th></tr></thead><tbody id="rows"></tbody></table></div><div id="empty" class="empty" hidden>ยังไม่มีข้อมูล Audit</div></section></main><dialog id="detail"><div class="modal-head"><b id="detailTitle">Audit detail</b><button class="btn" onclick="detail.close()">ปิด</button></div><div class="modal-body" id="detailBody"></div></dialog><script>
-let items=[];
-function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function fmtDate(s){try{return new Intl.DateTimeFormat('th-TH',{dateStyle:'medium',timeStyle:'short'}).format(new Date(s))}catch{return s||'-'}}
-function requireAdmin(){if(sessionStorage.getItem('lpa_admin')!=='1'){location.replace('login.html');throw new Error('Unauthorized')}}
-function db(){if(!window.firebase)throw new Error('โหลด Firebase ไม่สำเร็จ');if(!firebase.apps.length)firebase.initializeApp(window.LPA_FIREBASE_CONFIG);return firebase.database()}
-async function boot(){requireAdmin();document.getElementById('who').textContent='เข้าสู่ระบบโดย '+(sessionStorage.getItem('lpa_admin_name')||'Kittiya.thongdee');await load()}
-async function load(){requireAdmin();const snap=await db().ref('logisticLpaAudits').once('value');items=Object.entries(snap.val()||{}).map(([id,x])=>({...x,id:x.id||id})).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));render()}
-function auditScore(x){if(Number.isFinite(Number(x.summary?.scorePercent)))return Number(x.summary.scorePercent);const ok=Number(x.summary?.ok||0),observe=Number(x.summary?.observe||0),ng=Number(x.summary?.ng||0),scored=ok+observe+ng;return scored?Math.round(((ok*2+observe)/(scored*2))*1000)/10:0}
-function render(){const q=search.value.trim().toLowerCase();const list=items.filter(x=>[x.meta.auditNo,x.meta.unit,x.meta.line,x.meta.level,x.meta.auditor,x.meta.auditee].join(' ').toLowerCase().includes(q));rows.innerHTML=list.map(x=>`<tr><td>${esc(fmtDate(x.createdAt))}</td><td>${esc(x.meta.auditDate)}</td><td>${esc(x.meta.unit)}</td><td>${esc(x.meta.line)}</td><td>${esc(x.meta.level)}</td><td>${esc(x.meta.auditor)}</td><td><b style="color:#b91c1c">${auditScore(x).toFixed(1)}%</b><br><span class="tag">😊 ${x.summary?.ok||0} · 😐 ${x.summary?.observe||0} · 😒 ${x.summary?.ng||0}</span></td><td class="right"><button class="btn" onclick="viewAudit('${x.id}')">ดู</button> <button class="btn danger" onclick="removeAudit('${x.id}','${esc(x.meta.auditNo)}')">ลบ</button></td></tr>`).join('');empty.hidden=list.length>0;cTotal.textContent=items.length;cOk.textContent=items.reduce((n,x)=>n+(x.summary?.ok||0),0);cObs.textContent=items.reduce((n,x)=>n+(x.summary?.observe||0),0);cNg.textContent=items.reduce((n,x)=>n+(x.summary?.ng||0),0)}
-async function viewAudit(id){requireAdmin();const x=items.find(row=>row.id===id);if(!x)return alert('ไม่พบข้อมูล');detailTitle.textContent=`${x.meta.auditNo} · ${auditScore(x).toFixed(1)}%`;const labels={ok:'😊 OK',observe:'😐 Observation',ng:'😒 NG',na:'N/A'};const allIds=Array.from(new Set([...Object.keys(x.state?.answers||{}),...Object.keys(x.state?.comments||{}),...Object.keys(x.state?.images||{}),...Object.keys(x.state?.questions||{}),...Object.keys(x.state?.custom||{})])).sort((a,b)=>Number(a.slice(1))-Number(b.slice(1)));detailBody.innerHTML=`<div class="meta-grid"><div><b>วันที่ Audit</b><br>${esc(x.meta.auditDate)}</div><div><b>หน่วยงาน</b><br>${esc(x.meta.unit)}</div><div><b>Line / Area</b><br>${esc(x.meta.line)}</div><div><b>Level</b><br>${esc(x.meta.level)}</div><div><b>Auditor</b><br>${esc(x.meta.auditor)}</div><div><b>Auditee</b><br>${esc(x.meta.auditee||'-')}</div><div><b>คะแนนรวม</b><br><b style="color:#b91c1c">${auditScore(x).toFixed(1)}%</b></div><div><b>ส่งเมื่อ</b><br>${esc(fmtDate(x.createdAt))}</div></div><section class="signature-section"><div class="signature-section-title">ลายเซ็นยืนยัน / Final Confirmation</div><div class="signature-grid"><div class="signature-card"><b>Auditor Signature / ลายเซ็นผู้ตรวจ</b>${x.signatures?.auditor?`<img class="signature-image" src="${esc(x.signatures.auditor)}" alt="ลายเซ็น Auditor">`:'<div class="signature-missing">รายการนี้ไม่มีข้อมูลลายเซ็น</div>'}</div><div class="signature-card"><b>Auditee Signature / ลายเซ็นผู้รับการตรวจ</b>${x.signatures?.auditee?`<img class="signature-image" src="${esc(x.signatures.auditee)}" alt="ลายเซ็น Auditee">`:'<div class="signature-missing">รายการนี้ไม่มีข้อมูลลายเซ็น</div>'}</div></div></section>`+allIds.map(id=>{const a=x.state.answers?.[id]||'';const q=x.state.questions?.[id]||x.state.custom?.[id]||id;const image=x.state.images?.[id];return `<div class="question"><div>${esc(q)}</div><div class="answer ${esc(a)}">${esc(labels[a]||'ยังไม่ตอบ')}</div>${x.state.comments?.[id]?`<div class="muted">Comment: ${esc(x.state.comments[id])}</div>`:''}${image?`<img src="${image}" alt="รูปหลักฐาน" style="display:block;max-width:280px;max-height:220px;margin-top:8px;border-radius:8px;border:1px solid #dfe6ef;object-fit:contain">`:''}</div>`}).join('');detail.showModal()}
-async function removeAudit(id,no){requireAdmin();if(!confirm(`ลบข้อมูล ${no} ?`))return;await db().ref('logisticLpaAudits/'+id).remove();await load()}
-search.addEventListener('input',render);refresh.onclick=()=>load().catch(e=>alert(e.message));logout.onclick=()=>{sessionStorage.removeItem('lpa_admin');sessionStorage.removeItem('lpa_admin_name');location.replace('login.html')};boot().catch(e=>{console.error(e);if(e.message!=='Unauthorized')alert('โหลดข้อมูลไม่สำเร็จ: '+e.message)});
-</script></body></html>
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>Admin - SUPPLEMENT TO PROCEDURE DESCRIPTION - RayP QM-17 s3 | Layered Process Audit Checklist - Maintenance</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --nav:#7f1d1d;
+  --blue:#dc2626;
+  --bg:#fff7f7;
+  --line:#ead6d6;
+  --muted:#785f5f;
+  --red:#dc2626;
+}
+
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  font-family:'Noto Sans Thai',sans-serif;
+  background:var(--bg);
+  color:#2b1717;
+}
+
+.nav{
+  min-height:68px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:12px 24px;
+  color:#fff;
+  background:linear-gradient(90deg,var(--nav),#b91c1c);
+}
+
+.nav-brand{
+  display:flex;
+  align-items:center;
+}
+
+.wrap{
+  max-width:1320px;
+  margin:auto;
+  padding:24px;
+}
+
+.btn{
+  padding:9px 13px;
+  font:inherit;
+  cursor:pointer;
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:9px;
+}
+
+.btn:hover{
+  background:#fff5f5;
+}
+
+.primary{
+  color:#fff;
+  background:var(--blue);
+  border-color:var(--blue);
+}
+
+.primary:hover{
+  background:#b91c1c;
+}
+
+.danger{
+  color:var(--red);
+}
+
+.muted{
+  color:var(--muted);
+  font-size:13px;
+}
+
+.actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.cards{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+  margin:18px 0;
+}
+
+.card{
+  padding:16px;
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:14px;
+  box-shadow:0 5px 16px rgba(127,29,29,.06);
+}
+
+.card span{
+  display:block;
+  color:var(--muted);
+  font-size:12px;
+}
+
+.card b{
+  font-size:25px;
+}
+
+.panel{
+  padding:16px;
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:14px;
+  box-shadow:0 5px 16px rgba(127,29,29,.06);
+}
+
+.toolbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:12px;
+}
+
+.toolbar input{
+  width:min(430px,100%);
+  height:40px;
+  padding:0 10px;
+  font:inherit;
+  border:1px solid var(--line);
+  border-radius:8px;
+}
+
+.table-wrap{
+  overflow:auto;
+}
+
+table{
+  width:100%;
+  min-width:1000px;
+  font-size:12px;
+  border-collapse:collapse;
+}
+
+th,
+td{
+  padding:10px;
+  text-align:left;
+  vertical-align:top;
+  border-bottom:1px solid var(--line);
+}
+
+th{
+  color:#7f1d1d;
+  background:#fee2e2;
+}
+
+.tag{
+  display:inline-block;
+  padding:3px 7px;
+  background:#fff1f2;
+  border-radius:999px;
+}
+
+.right{
+  text-align:right;
+}
+
+.empty{
+  padding:38px;
+  color:var(--muted);
+  text-align:center;
+}
+
+dialog{
+  width:min(980px,94vw);
+  padding:0;
+  border:0;
+  border-radius:16px;
+  box-shadow:0 30px 80px #0003;
+}
+
+dialog::backdrop{
+  background:#0f172a99;
+}
+
+.modal-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:16px 18px;
+  border-bottom:1px solid var(--line);
+}
+
+.modal-body{
+  max-height:76vh;
+  padding:18px;
+  overflow:auto;
+}
+
+.meta-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px 16px;
+  margin-bottom:14px;
+}
+
+.signature-section{
+  margin:16px 0;
+  padding:14px;
+  background:#fffafa;
+  border:1px solid var(--line);
+  border-radius:12px;
+}
+
+.signature-section-title{
+  margin-bottom:10px;
+  color:#7f1d1d;
+  font-weight:700;
+}
+
+.signature-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+
+.signature-card{
+  padding:10px;
+  text-align:center;
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:10px;
+}
+
+.signature-card b{
+  display:block;
+  margin-bottom:7px;
+}
+
+.signature-image{
+  display:block;
+  width:100%;
+  height:120px;
+  object-fit:contain;
+  background:#fff;
+  border:1px dashed #d7bcbc;
+  border-radius:8px;
+}
+
+.signature-missing{
+  height:120px;
+  display:grid;
+  place-items:center;
+  color:var(--muted);
+  font-size:12px;
+  border:1px dashed #d7bcbc;
+  border-radius:8px;
+}
+
+.question{
+  padding:10px 0;
+  border-bottom:1px solid #f3dada;
+}
+
+.answer{
+  font-weight:700;
+}
+
+.ok{
+  color:#15803d;
+}
+
+.observe{
+  color:#b45309;
+}
+
+.ng{
+  color:#b91c1c;
+}
+
+.na{
+  color:#64748b;
+}
+
+@media(max-width:760px){
+  .cards{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .meta-grid{
+    grid-template-columns:1fr;
+  }
+
+  .wrap{
+    padding:12px;
+  }
+
+  .nav{
+    padding:12px;
+  }
+
+  .toolbar{
+    align-items:stretch;
+    flex-direction:column;
+  }
+}
+
+@media(max-width:600px){
+  .signature-grid{
+    grid-template-columns:1fr;
+  }
+}
+</style>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
+</head>
+
+<body>
+
+<div class="nav">
+  <div class="nav-brand">
+    <div>
+      <b>RayP QM-17 s3 · MAINTENANCE ADMIN</b>
+
+      <div style="font-size:11px;color:#fecaca">
+        ระบบหลังบ้าน · ต้อง Login
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button
+      class="btn"
+      type="button"
+      onclick="location.href='audit.html'"
+    >
+      เปิดหน้ากรอกข้อมูล
+    </button>
+
+    <button
+      class="btn"
+      id="logout"
+      type="button"
+    >
+      ออกจากระบบ
+    </button>
+  </div>
+</div>
+
+<main class="wrap">
+  <h1 style="margin-bottom:3px">
+    รายการ Maintenance Process Audit
+  </h1>
+
+  <p class="muted" id="who">
+    กำลังตรวจสอบสิทธิ์...
+  </p>
+
+  <div class="cards">
+    <div class="card">
+      <span>รายการทั้งหมด</span>
+      <b id="cTotal">0</b>
+    </div>
+
+    <div class="card">
+      <span>OK รวม</span>
+      <b id="cOk">0</b>
+    </div>
+
+    <div class="card">
+      <span>Observation รวม</span>
+      <b id="cObs">0</b>
+    </div>
+
+    <div class="card">
+      <span>NG รวม</span>
+      <b id="cNg">0</b>
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="toolbar">
+      <input
+        id="search"
+        type="search"
+        placeholder="ค้นหา หน่วยงาน, Line, Auditor, Auditee"
+      >
+
+      <button
+        class="btn primary"
+        id="refresh"
+        type="button"
+      >
+        รีเฟรช
+      </button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>วันเวลาที่ส่ง</th>
+            <th>วันที่ Audit</th>
+            <th>หน่วยงาน</th>
+            <th>Line / Area</th>
+            <th>Level</th>
+            <th>Auditor</th>
+            <th>ผล</th>
+            <th class="right">จัดการ</th>
+          </tr>
+        </thead>
+
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+
+    <div id="empty" class="empty" hidden>
+      ยังไม่มีข้อมูล Audit
+    </div>
+  </section>
+</main>
+
+<dialog id="detail">
+  <div class="modal-head">
+    <b id="detailTitle">Audit detail</b>
+
+    <button
+      class="btn"
+      id="closeDetail"
+      type="button"
+    >
+      ปิด
+    </button>
+  </div>
+
+  <div class="modal-body" id="detailBody"></div>
+</dialog>
+
+<script>
+const DATABASE_PATH = "logisticLpaAudits";
+
+let items = [];
+
+const searchInput = document.getElementById("search");
+const rowsElement = document.getElementById("rows");
+const emptyElement = document.getElementById("empty");
+const totalElement = document.getElementById("cTotal");
+const okElement = document.getElementById("cOk");
+const observationElement = document.getElementById("cObs");
+const ngElement = document.getElementById("cNg");
+const refreshButton = document.getElementById("refresh");
+const logoutButton = document.getElementById("logout");
+const detailDialog = document.getElementById("detail");
+const detailTitle = document.getElementById("detailTitle");
+const detailBody = document.getElementById("detailBody");
+const closeDetailButton = document.getElementById("closeDetail");
+const whoElement = document.getElementById("who");
+
+function escapeHtml(value = "") {
+  return String(value).replace(
+    /[&<>"']/g,
+    character => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    }[character])
+  );
+}
+
+function formatDate(value) {
+  if (!value) {
+    return "-";
+  }
+
+  try {
+    return new Intl.DateTimeFormat("th-TH", {
+      dateStyle: "medium",
+      timeStyle: "short"
+    }).format(new Date(value));
+  } catch {
+    return String(value);
+  }
+}
+
+function requireAdmin() {
+  if (sessionStorage.getItem("lpa_admin") !== "1") {
+    window.location.replace("login.html");
+    throw new Error("Unauthorized");
+  }
+}
+
+function getDatabase() {
+  if (!window.firebase) {
+    throw new Error("โหลด Firebase ไม่สำเร็จ");
+  }
+
+  if (!window.LPA_FIREBASE_CONFIG) {
+    throw new Error("ไม่พบการตั้งค่า Firebase");
+  }
+
+  if (!firebase.apps.length) {
+    firebase.initializeApp(window.LPA_FIREBASE_CONFIG);
+  }
+
+  return firebase.database();
+}
+
+function getMeta(item) {
+  return item && item.meta ? item.meta : {};
+}
+
+function getSummary(item) {
+  return item && item.summary ? item.summary : {};
+}
+
+function getState(item) {
+  return item && item.state ? item.state : {};
+}
+
+async function boot() {
+  requireAdmin();
+
+  const adminName =
+    sessionStorage.getItem("lpa_admin_name") ||
+    "Kittiya.thongdee";
+
+  whoElement.textContent =
+    "เข้าสู่ระบบโดย " + adminName;
+
+  await loadAudits();
+}
+
+async function loadAudits() {
+  requireAdmin();
+
+  refreshButton.disabled = true;
+  refreshButton.textContent = "กำลังโหลด...";
+
+  try {
+    const snapshot = await getDatabase()
+      .ref(DATABASE_PATH)
+      .once("value");
+
+    const databaseValue = snapshot.val() || {};
+
+    items = Object.entries(databaseValue)
+      .map(([id, item]) => ({
+        ...item,
+        id: item && item.id ? item.id : id
+      }))
+      .sort((firstItem, secondItem) =>
+        String(secondItem.createdAt || "")
+          .localeCompare(String(firstItem.createdAt || ""))
+      );
+
+    render();
+  } finally {
+    refreshButton.disabled = false;
+    refreshButton.textContent = "รีเฟรช";
+  }
+}
+
+function calculateAuditScore(item) {
+  const summary = getSummary(item);
+  const storedScore = Number(summary.scorePercent);
+
+  if (Number.isFinite(storedScore)) {
+    return storedScore;
+  }
+
+  const ok = Number(summary.ok || 0);
+  const observation = Number(summary.observe || 0);
+  const ng = Number(summary.ng || 0);
+  const totalScored = ok + observation + ng;
+
+  if (!totalScored) {
+    return 0;
+  }
+
+  return Math.round(
+    ((ok * 2 + observation) / (totalScored * 2)) *
+    1000
+  ) / 10;
+}
+
+function render() {
+  const searchValue =
+    searchInput.value.trim().toLowerCase();
+
+  const filteredItems = items.filter(item => {
+    const meta = getMeta(item);
+
+    return [
+      meta.auditNo,
+      meta.unit,
+      meta.line,
+      meta.level,
+      meta.auditor,
+      meta.auditee
+    ]
+      .join(" ")
+      .toLowerCase()
+      .includes(searchValue);
+  });
+
+  rowsElement.innerHTML = filteredItems
+    .map(item => {
+      const meta = getMeta(item);
+      const summary = getSummary(item);
+      const score = calculateAuditScore(item);
+
+      return `
+        <tr>
+          <td>${escapeHtml(formatDate(item.createdAt))}</td>
+          <td>${escapeHtml(meta.auditDate || "-")}</td>
+          <td>${escapeHtml(meta.unit || "-")}</td>
+          <td>${escapeHtml(meta.line || "-")}</td>
+          <td>${escapeHtml(meta.level || "-")}</td>
+          <td>${escapeHtml(meta.auditor || "-")}</td>
+
+          <td>
+            <b style="color:#b91c1c">
+              ${score.toFixed(1)}%
+            </b>
+
+            <br>
+
+            <span class="tag">
+              😊 ${Number(summary.ok || 0)}
+              · 😐 ${Number(summary.observe || 0)}
+              · 😒 ${Number(summary.ng || 0)}
+            </span>
+          </td>
+
+          <td class="right">
+            <button
+              class="btn"
+              type="button"
+              onclick="viewAudit('${escapeHtml(item.id)}')"
+            >
+              ดู
+            </button>
+
+            <button
+              class="btn danger"
+              type="button"
+              onclick="removeAudit(
+                '${escapeHtml(item.id)}',
+                '${escapeHtml(meta.auditNo || item.id)}'
+              )"
+            >
+              ลบ
+            </button>
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  emptyElement.hidden = filteredItems.length > 0;
+
+  totalElement.textContent = items.length;
+
+  okElement.textContent = items.reduce(
+    (total, item) =>
+      total + Number(getSummary(item).ok || 0),
+    0
+  );
+
+  observationElement.textContent = items.reduce(
+    (total, item) =>
+      total + Number(getSummary(item).observe || 0),
+    0
+  );
+
+  ngElement.textContent = items.reduce(
+    (total, item) =>
+      total + Number(getSummary(item).ng || 0),
+    0
+  );
+}
+
+function createSignatureCard(
+  title,
+  signatureData,
+  imageAlt
+) {
+  const signatureContent = signatureData
+    ? `
+      <img
+        class="signature-image"
+        src="${escapeHtml(signatureData)}"
+        alt="${escapeHtml(imageAlt)}"
+      >
+    `
+    : `
+      <div class="signature-missing">
+        รายการนี้ไม่มีข้อมูลลายเซ็น
+      </div>
+    `;
+
+  return `
+    <div class="signature-card">
+      <b>${escapeHtml(title)}</b>
+      ${signatureContent}
+    </div>
+  `;
+}
+
+function createQuestionRow(item, questionId, labels) {
+  const state = getState(item);
+  const answers = state.answers || {};
+  const comments = state.comments || {};
+  const images = state.images || {};
+  const questions = state.questions || {};
+  const customQuestions = state.custom || {};
+
+  const answer = answers[questionId] || "";
+  const question =
+    questions[questionId] ||
+    customQuestions[questionId] ||
+    questionId;
+
+  const comment = comments[questionId] || "";
+  const evidenceImage = images[questionId] || "";
+
+  return `
+    <div class="question">
+      <div>${escapeHtml(question)}</div>
+
+      <div class="answer ${escapeHtml(answer)}">
+        ${escapeHtml(labels[answer] || "ยังไม่ตอบ")}
+      </div>
+
+      ${
+        comment
+          ? `
+            <div class="muted">
+              Comment: ${escapeHtml(comment)}
+            </div>
+          `
+          : ""
+      }
+
+      ${
+        evidenceImage
+          ? `
+            <img
+              src="${escapeHtml(evidenceImage)}"
+              alt="รูปหลักฐาน"
+              style="
+                display:block;
+                max-width:280px;
+                max-height:220px;
+                margin-top:8px;
+                object-fit:contain;
+                border:1px solid #dfe6ef;
+                border-radius:8px;
+              "
+            >
+          `
+          : ""
+      }
+    </div>
+  `;
+}
+
+async function viewAudit(id) {
+  requireAdmin();
+
+  const item = items.find(
+    auditItem => String(auditItem.id) === String(id)
+  );
+
+  if (!item) {
+    alert("ไม่พบข้อมูล");
+    return;
+  }
+
+  const meta = getMeta(item);
+  const state = getState(item);
+  const signatures = item.signatures || {};
+
+  detailTitle.textContent =
+    (meta.auditNo || "Audit Detail") +
+    " · " +
+    calculateAuditScore(item).toFixed(1) +
+    "%";
+
+  const answerLabels = {
+    ok: "😊 OK",
+    observe: "😐 Observation",
+    ng: "😒 NG",
+    na: "N/A"
+  };
+
+  const questionIds = Array.from(
+    new Set([
+      ...Object.keys(state.answers || {}),
+      ...Object.keys(state.comments || {}),
+      ...Object.keys(state.images || {}),
+      ...Object.keys(state.questions || {}),
+      ...Object.keys(state.custom || {})
+    ])
+  ).sort((firstId, secondId) => {
+    const firstNumber = Number(firstId.slice(1));
+    const secondNumber = Number(secondId.slice(1));
+
+    if (
+      Number.isFinite(firstNumber) &&
+      Number.isFinite(secondNumber)
+    ) {
+      return firstNumber - secondNumber;
+    }
+
+    return firstId.localeCompare(secondId);
+  });
+
+  detailBody.innerHTML = `
+    <div class="meta-grid">
+      <div>
+        <b>วันที่ Audit</b><br>
+        ${escapeHtml(meta.auditDate || "-")}
+      </div>
+
+      <div>
+        <b>หน่วยงาน</b><br>
+        ${escapeHtml(meta.unit || "-")}
+      </div>
+
+      <div>
+        <b>Line / Area</b><br>
+        ${escapeHtml(meta.line || "-")}
+      </div>
+
+      <div>
+        <b>Level</b><br>
+        ${escapeHtml(meta.level || "-")}
+      </div>
+
+      <div>
+        <b>Auditor</b><br>
+        ${escapeHtml(meta.auditor || "-")}
+      </div>
+
+      <div>
+        <b>Auditee</b><br>
+        ${escapeHtml(meta.auditee || "-")}
+      </div>
+
+      <div>
+        <b>คะแนนรวม</b><br>
+        <b style="color:#b91c1c">
+          ${calculateAuditScore(item).toFixed(1)}%
+        </b>
+      </div>
+
+      <div>
+        <b>ส่งเมื่อ</b><br>
+        ${escapeHtml(formatDate(item.createdAt))}
+      </div>
+    </div>
+
+    <section class="signature-section">
+      <div class="signature-section-title">
+        ลายเซ็นยืนยัน / Final Confirmation
+      </div>
+
+      <div class="signature-grid">
+        ${createSignatureCard(
+          "Auditor Signature / ลายเซ็นผู้ตรวจ",
+          signatures.auditor,
+          "ลายเซ็น Auditor"
+        )}
+
+        ${createSignatureCard(
+          "Auditee Signature / ลายเซ็นผู้รับการตรวจ",
+          signatures.auditee,
+          "ลายเซ็น Auditee"
+        )}
+      </div>
+    </section>
+
+    ${questionIds
+      .map(questionId =>
+        createQuestionRow(
+          item,
+          questionId,
+          answerLabels
+        )
+      )
+      .join("")}
+  `;
+
+  detailDialog.showModal();
+}
+
+async function removeAudit(id, auditNumber) {
+  requireAdmin();
+
+  const confirmed = window.confirm(
+    `ต้องการลบข้อมูล ${auditNumber} ใช่หรือไม่?`
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    await getDatabase()
+      .ref(`${DATABASE_PATH}/${id}`)
+      .remove();
+
+    await loadAudits();
+  } catch (error) {
+    console.error(error);
+    alert(
+      "ลบข้อมูลไม่สำเร็จ: " +
+      (error.message || "เกิดข้อผิดพลาด")
+    );
+  }
+}
+
+searchInput.addEventListener("input", render);
+
+refreshButton.addEventListener("click", () => {
+  loadAudits().catch(error => {
+    console.error(error);
+
+    alert(
+      "โหลดข้อมูลไม่สำเร็จ: " +
+      (error.message || "เกิดข้อผิดพลาด")
+    );
+  });
+});
+
+closeDetailButton.addEventListener("click", () => {
+  detailDialog.close();
+});
+
+logoutButton.addEventListener("click", () => {
+  sessionStorage.removeItem("lpa_admin");
+  sessionStorage.removeItem("lpa_admin_name");
+
+  window.location.replace("login.html");
+});
+
+boot().catch(error => {
+  console.error(error);
+
+  if (error.message !== "Unauthorized") {
+    alert(
+      "โหลดข้อมูลไม่สำเร็จ: " +
+      (error.message || "เกิดข้อผิดพลาด")
+    );
+  }
+});
+</script>
+
+</body>
+</html>
