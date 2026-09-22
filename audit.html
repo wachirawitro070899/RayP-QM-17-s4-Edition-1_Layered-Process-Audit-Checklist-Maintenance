@@ -28,6 +28,8 @@
     .print-title{display:none}
     .summary-card{display:none!important}
     .submit-footer{display:flex;justify-content:flex-end;padding-top:16px}.submit-footer .btn{min-width:220px;height:48px;font-size:15px;font-weight:700}
+
+    .signature-section{margin-top:16px;border:1px solid var(--line);border-radius:12px;padding:14px;background:#fffafa}.signature-title{font-weight:700;color:#7f1d1d;margin-bottom:10px}.signature-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.signature-card{border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff}.signature-card b{display:block;margin-bottom:7px;text-align:center}.signature-pad{display:block;width:100%;height:150px;border:1px dashed #c99b9b;border-radius:8px;background:#fff;touch-action:none;cursor:crosshair}.signature-actions{display:flex;justify-content:flex-end;margin-top:7px}.signature-clear{border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--red);padding:6px 12px;font:inherit;font-size:12px;cursor:pointer}
     .evidence-tools{display:flex;align-items:center;gap:8px;margin-top:7px}.evidence-input{display:none}.evidence-add,.evidence-remove{border:1px solid var(--line);border-radius:7px;background:#fff;padding:6px 9px;font:inherit;font-size:11px;cursor:pointer}.evidence-remove{color:var(--red)}.evidence-preview{display:block;max-width:150px;max-height:100px;margin-top:7px;border:1px solid var(--line);border-radius:8px;object-fit:cover}
     @media(max-width:1050px){.filters{grid-template-columns:repeat(3,1fr)}.summary{grid-template-columns:repeat(3,1fr)}}
     @media(max-width:700px){
@@ -113,6 +115,15 @@
         <div class="evaluation-live neutral" id="evaluationLive">Current score: <strong id="evaluationPercent">0.0%</strong></div>
       </section>
       
+
+      <section class="signature-section no-print" id="signatureSection">
+        <div class="signature-title">ลายเซ็นยืนยัน / Final Confirmation</div>
+        <div class="signature-grid">
+          <div class="signature-card"><b>Auditor Signature / ลายเซ็นผู้ตรวจ</b><canvas class="signature-pad" id="auditorSignature"></canvas><div class="signature-actions"><button class="signature-clear" type="button" data-clear-signature="auditor">ล้างลายเซ็น</button></div></div>
+          <div class="signature-card"><b>Auditee Signature / ลายเซ็นผู้รับการตรวจ</b><canvas class="signature-pad" id="auditeeSignature"></canvas><div class="signature-actions"><button class="signature-clear" type="button" data-clear-signature="auditee">ล้างลายเซ็น</button></div></div>
+        </div>
+      </section>
+
 <div class="hint no-print">เลือกผลได้ 1 ค่า/ข้อ สามารถบันทึกร่างไว้ในเครื่อง หรือกด “ส่งข้อมูล” เพื่อบันทึกเข้าระบบหลังบ้าน</div>
       <div class="submit-footer no-print"><button class="btn success" id="submitBtn">ส่งข้อมูล</button></div>
     </section>
@@ -194,6 +205,21 @@ const sections = [
 ];
 
 const state = { answers:{}, comments:{}, custom:{}, images:{} };
+const signatures={auditor:'',auditee:''};
+const signaturePads={};
+function setupSignaturePad(type){
+  const canvas=document.getElementById(type+'Signature'),ctx=canvas.getContext('2d');
+  signaturePads[type]={canvas,ctx,drawing:false};
+  const resize=()=>{const saved=signatures[type],rect=canvas.getBoundingClientRect(),ratio=Math.max(window.devicePixelRatio||1,1);canvas.width=Math.max(1,Math.round(rect.width*ratio));canvas.height=Math.max(1,Math.round(rect.height*ratio));ctx.setTransform(ratio,0,0,ratio,0,0);ctx.lineWidth=2.2;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#1f2937';if(saved){const img=new Image();img.onload=()=>ctx.drawImage(img,0,0,rect.width,rect.height);img.src=saved}};
+  const point=e=>{const r=canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}};
+  canvas.addEventListener('pointerdown',e=>{e.preventDefault();canvas.setPointerCapture(e.pointerId);signaturePads[type].drawing=true;const p=point(e);ctx.beginPath();ctx.moveTo(p.x,p.y)});
+  canvas.addEventListener('pointermove',e=>{if(!signaturePads[type].drawing)return;e.preventDefault();const p=point(e);ctx.lineTo(p.x,p.y);ctx.stroke()});
+  const finish=()=>{if(!signaturePads[type].drawing)return;signaturePads[type].drawing=false;signatures[type]=canvas.toDataURL('image/png');save(false)};
+  canvas.addEventListener('pointerup',finish);canvas.addEventListener('pointercancel',finish);canvas.addEventListener('pointerleave',finish);resize();
+}
+function clearSignature(type){const pad=signaturePads[type];signatures[type]='';if(pad)pad.ctx.clearRect(0,0,pad.canvas.width,pad.canvas.height);save(false)}
+function restoreSignature(type,data){signatures[type]=data||'';const pad=signaturePads[type];if(!pad)return;const r=pad.canvas.getBoundingClientRect();pad.ctx.clearRect(0,0,pad.canvas.width,pad.canvas.height);if(data){const img=new Image();img.onload=()=>pad.ctx.drawImage(img,0,0,r.width,r.height);img.src=data}}
+
 const metaIds=['auditNo','auditDate','line','level','auditor','unit','auditee'];
 function todayLocal(){const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)}
 function newAuditNo(){const d=new Date(),p=n=>String(n).padStart(2,'0');return `LPA-${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`}
@@ -231,9 +257,9 @@ function scorePercent(vals=Object.values(state.answers)){const ok=vals.filter(v=
 function updateSummary(){const vals=Object.values(state.answers);const t=totalItems(),a=vals.length;document.getElementById('mTotal').textContent=t;document.getElementById('mAnswered').textContent=a;document.getElementById('mOk').textContent=vals.filter(v=>v==='ok').length;document.getElementById('mObserve').textContent=vals.filter(v=>v==='observe').length;document.getElementById('mNg').textContent=vals.filter(v=>v==='ng').length;document.getElementById('progressBar').style.width=(t?a/t*100:0)+'%';const score=scorePercent(vals);const pct=document.getElementById('evaluationPercent');const live=document.getElementById('evaluationLive');if(pct)pct.textContent=score.toFixed(1)+'%';if(live){live.classList.remove('green','yellow','red','neutral');const scored=vals.some(v=>v==='ok'||v==='observe'||v==='ng');live.classList.add(!scored?'neutral':score>=90?'green':score>=75?'yellow':'red')}}
 function meta(){return Object.fromEntries(metaIds.map(id=>[id,document.getElementById(id).value]))}
 function storageKey(){return 'lpaAudit:'+((document.getElementById('auditNo').value||'draft').trim())}
-function save(show=true){try{localStorage.setItem(storageKey(),JSON.stringify({meta:meta(),state,updatedAt:new Date().toISOString()}))}catch(e){if(show)alert('พื้นที่บันทึกร่างในเครื่องเต็ม กรุณาลดจำนวนรูป')}if(show){const el=document.getElementById('savedMsg');el.textContent='บันทึกร่างแล้วในเครื่องนี้';setTimeout(()=>el.textContent='',2200)}}
+function save(show=true){try{localStorage.setItem(storageKey(),JSON.stringify({meta:meta(),state,signatures,updatedAt:new Date().toISOString()}))}catch(e){if(show)alert('พื้นที่บันทึกร่างในเครื่องเต็ม กรุณาลดจำนวนรูป')}if(show){const el=document.getElementById('savedMsg');el.textContent='บันทึกร่างแล้วในเครื่องนี้';setTimeout(()=>el.textContent='',2200)}}
 let timer;function debouncedSave(){clearTimeout(timer);timer=setTimeout(()=>save(false),500)} function autoSave(){save(false)}
-function loadCurrent(){const raw=localStorage.getItem(storageKey());if(!raw)return;try{const d=JSON.parse(raw);Object.assign(state.answers,d.state?.answers||{});Object.assign(state.comments,d.state?.comments||{});Object.assign(state.custom,d.state?.custom||{});Object.assign(state.images,d.state?.images||{});if(d.meta)metaIds.forEach(id=>{if(d.meta[id]!=null)document.getElementById(id).value=d.meta[id]});renderTable()}catch(e){console.warn(e)}}
+function loadCurrent(){const raw=localStorage.getItem(storageKey());if(!raw)return;try{const d=JSON.parse(raw);Object.assign(state.answers,d.state?.answers||{});Object.assign(state.comments,d.state?.comments||{});Object.assign(state.custom,d.state?.custom||{});Object.assign(state.images,d.state?.images||{});restoreSignature('auditor',d.signatures?.auditor);restoreSignature('auditee',d.signatures?.auditee);if(d.meta)metaIds.forEach(id=>{if(d.meta[id]!=null)document.getElementById(id).value=d.meta[id]});renderTable()}catch(e){console.warn(e)}}
 
 function questionMap(){
   const out={}; let idx=0;
@@ -283,7 +309,8 @@ async function submitAudit(){
   }
   const vals=Object.values(state.answers);
   const score=scorePercent(vals);
-  const payload={meta:m,state:{answers:state.answers,comments:state.comments,custom:state.custom,images:state.images,questions:questionMap()},summary:{total:required.length,answered:required.length,ok:vals.filter(v=>v==='ok').length,observe:vals.filter(v=>v==='observe').length,ng:vals.filter(v=>v==='ng').length,na:vals.filter(v=>v==='na').length,scorePercent:score}};
+  if(!signatures.auditor||!signatures.auditee){alert('กรุณาลงลายเซ็น Auditor และ Auditee ให้ครบก่อนส่งข้อมูล');document.getElementById('signatureSection').scrollIntoView({behavior:'smooth',block:'center'});return}
+  const payload={meta:m,signatures:{auditor:signatures.auditor,auditee:signatures.auditee},state:{answers:state.answers,comments:state.comments,custom:state.custom,images:state.images,questions:questionMap()},summary:{total:required.length,answered:required.length,ok:vals.filter(v=>v==='ok').length,observe:vals.filter(v=>v==='observe').length,ng:vals.filter(v=>v==='ng').length,na:vals.filter(v=>v==='na').length,scorePercent:score}};
   if(JSON.stringify(payload).length>7000000){alert('รูปหลักฐานรวมมีขนาดใหญ่เกินไป กรุณาลบบางรูปก่อนส่ง');return}
   const btn=document.getElementById('submitBtn');btn.disabled=true;btn.textContent='กำลังส่ง...';
   try{
@@ -302,6 +329,7 @@ function resetAuditForm(){
   Object.keys(state.comments).forEach(k=>delete state.comments[k]);
   Object.keys(state.custom).forEach(k=>delete state.custom[k]);
   Object.keys(state.images).forEach(k=>delete state.images[k]);
+  clearSignature('auditor');clearSignature('auditee');
   document.getElementById('auditNo').value=newAuditNo();
   document.getElementById('auditDate').value=todayLocal();
   document.getElementById('line').value='Area 12 Maintenance';
@@ -332,7 +360,7 @@ function safeName(s){return String(s).replace(/[\\/:*?"<>|]/g,'_')}
 
 document.getElementById('saveBtn').addEventListener('click',()=>save(true));document.getElementById('submitBtn').addEventListener('click',submitAudit);document.getElementById('excelBtn').addEventListener('click',exportExcel);document.getElementById('pdfBtn').addEventListener('click',exportPDF);document.getElementById('printBtn').addEventListener('click',()=>{updatePrintMeta();window.print()});
 metaIds.slice(1).forEach(id=>document.getElementById(id).addEventListener('change',debouncedSave));
-renderTable();loadCurrent();updatePrintMeta();
+setupSignaturePad('auditor');setupSignaturePad('auditee');document.querySelectorAll('[data-clear-signature]').forEach(btn=>btn.addEventListener('click',()=>clearSignature(btn.dataset.clearSignature)));renderTable();loadCurrent();updatePrintMeta();
 </script>
 </body>
 </html>
