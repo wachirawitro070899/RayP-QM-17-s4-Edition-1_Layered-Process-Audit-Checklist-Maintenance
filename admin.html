@@ -643,8 +643,6 @@ function exportExcel() {
     return;
   }
 
-  const summaryRows = [];
-  const detailRows = [];
   const answerLabels = {
     ok: "OK",
     observe: "Observation",
@@ -652,35 +650,21 @@ function exportExcel() {
     na: "N/A"
   };
 
-  exportItems.forEach((item, index) => {
+  // 1 Auditor = 1 Excel sheet. No Summary sheet.
+  const rowsByAuditor = new Map();
+
+  exportItems.forEach((item) => {
     const meta = item.meta || {};
-    const summary = item.summary || {};
     const state = item.state || {};
     const answers = state.answers || {};
     const comments = state.comments || {};
     const images = state.images || {};
     const questions = state.questions || {};
     const customQuestions = state.custom || {};
-    const signatures = item.signatures || {};
-    const auditNo = meta.auditNo || item.id || "";
 
-    summaryRows.push({
-      "No.": index + 1,
-      "Audit No.": auditNo,
-      "Submitted At": item.createdAt || "",
-      "Audit Date": meta.auditDate || "",
-      "Unit / Function": meta.unit || "",
-      "Line / Area": meta.line || "",
-      "Level": meta.level || "",
-      "Auditor": meta.auditor || "",
-      "Auditee": meta.auditee || "",
-      "Score (%)": exportAuditScore(item),
-      "OK": Number(summary.ok || 0),
-      "Observation": Number(summary.observe || 0),
-      "NG": Number(summary.ng || 0),
-      "Auditor Signature": signatures.auditor ? "Yes" : "No",
-      "Auditee Signature": signatures.auditee ? "Yes" : "No"
-    });
+    const auditorName = String(meta.auditor || "ไม่ระบุ Auditor").trim() || "ไม่ระบุ Auditor";
+    if (!rowsByAuditor.has(auditorName)) rowsByAuditor.set(auditorName, []);
+    const auditorRows = rowsByAuditor.get(auditorName);
 
     const questionIds = Array.from(new Set([
       ...Object.keys(answers),
@@ -695,55 +679,80 @@ function exportExcel() {
       return String(a).localeCompare(String(b));
     });
 
+    const baseRow = {
+      "Submitted At": item.createdAt || "",
+      "Audit Date": meta.auditDate || "",
+      "Unit / Function": meta.unit || "",
+      "Line / Area": meta.line || "",
+      "Level": meta.level || "",
+      "Auditor": meta.auditor || "",
+      "Auditee": meta.auditee || ""
+    };
+
     if (!questionIds.length) {
-      detailRows.push({
-        "Audit No.": auditNo,
-        "Audit Date": meta.auditDate || "",
-        "Line / Area": meta.line || "",
-        "Level": meta.level || "",
-        "Auditor": meta.auditor || "",
-        "Auditee": meta.auditee || "",
-        "Question ID": "",
+      auditorRows.push({
+        ...baseRow,
         "Question": "",
         "Result": "",
         "Comment": "",
         "Evidence Image": "No"
       });
-    } else {
-      questionIds.forEach(questionId => {
-        const answer = answers[questionId] || "";
-        detailRows.push({
-          "Audit No.": auditNo,
-          "Audit Date": meta.auditDate || "",
-          "Line / Area": meta.line || "",
-          "Level": meta.level || "",
-          "Auditor": meta.auditor || "",
-          "Auditee": meta.auditee || "",
-          "Question ID": questionId,
-          "Question": questions[questionId] || customQuestions[questionId] || questionId,
-          "Result": answerLabels[answer] || answer || "",
-          "Comment": comments[questionId] || "",
-          "Evidence Image": images[questionId] ? "Yes" : "No"
-        });
-      });
+      return;
     }
+
+    questionIds.forEach((questionId) => {
+      const answer = answers[questionId] || "";
+      auditorRows.push({
+        ...baseRow,
+        "Question": questions[questionId] || customQuestions[questionId] || questionId,
+        "Result": answerLabels[answer] || answer || "",
+        "Comment": comments[questionId] || "",
+        "Evidence Image": images[questionId] ? "Yes" : "No"
+      });
+    });
   });
 
   const workbook = XLSX.utils.book_new();
-  const summarySheet = XLSX.utils.json_to_sheet(summaryRows);
-  const detailSheet = XLSX.utils.json_to_sheet(detailRows);
+  const usedSheetNames = new Set();
 
-  summarySheet["!cols"] = [
-    {wch:6},{wch:20},{wch:24},{wch:14},{wch:20},{wch:36},{wch:10},{wch:22},
-    {wch:22},{wch:12},{wch:8},{wch:14},{wch:8},{wch:18},{wch:18}
-  ];
-  detailSheet["!cols"] = [
-    {wch:20},{wch:14},{wch:36},{wch:10},{wch:22},{wch:22},{wch:12},{wch:65},
-    {wch:14},{wch:45},{wch:16}
-  ];
+  function makeUniqueSheetName(name) {
+    let base = String(name || "Auditor")
+      .replace(/[\\\/?*\[\]:]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
 
-  XLSX.utils.book_append_sheet(workbook, summarySheet, "Audit Summary");
-  XLSX.utils.book_append_sheet(workbook, detailSheet, "Audit Details");
+    if (!base) base = "Auditor";
+    base = base.slice(0, 31);
+
+    let sheetName = base;
+    let suffix = 2;
+    while (usedSheetNames.has(sheetName.toLowerCase())) {
+      const tail = " (" + suffix + ")";
+      sheetName = base.slice(0, 31 - tail.length) + tail;
+      suffix += 1;
+    }
+
+    usedSheetNames.add(sheetName.toLowerCase());
+    return sheetName;
+  }
+
+  rowsByAuditor.forEach((rows, auditorName) => {
+    const sheet = XLSX.utils.json_to_sheet(rows);
+    sheet["!cols"] = [
+      {wch:24},
+      {wch:14},
+      {wch:20},
+      {wch:36},
+      {wch:10},
+      {wch:22},
+      {wch:22},
+      {wch:65},
+      {wch:14},
+      {wch:45},
+      {wch:16}
+    ];
+    XLSX.utils.book_append_sheet(workbook, sheet, makeUniqueSheetName(auditorName));
+  });
 
   const now = new Date();
   const datePart = [
@@ -752,9 +761,8 @@ function exportExcel() {
     String(now.getDate()).padStart(2, "0")
   ].join("-");
 
-  XLSX.writeFile(workbook, "Maintenance" + "_LPA_Audit_" + datePart + ".xlsx");
+  XLSX.writeFile(workbook, "Maintenance_LPA_Audit_By_Auditor_" + datePart + ".xlsx");
 }
-
 function render() {
   const searchValue =
     searchInput.value.trim().toLowerCase();
