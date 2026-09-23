@@ -324,7 +324,7 @@ dialog::backdrop{
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
-</head>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script></head>
 
 <body>
 
@@ -391,6 +391,14 @@ dialog::backdrop{
         type="search"
         placeholder="ค้นหา Audit No., หน่วยงาน, Area, Level, Auditor, Auditee"
       >
+
+      <button
+        class="btn"
+        id="exportExcel"
+        type="button"
+      >
+        ดาวน์โหลด Excel
+      </button>
 
       <button
         class="btn primary"
@@ -590,6 +598,161 @@ function calculateAuditScore(item) {
     ((ok * 2 + observation) / (totalScored * 2)) *
     1000
   ) / 10;
+}
+
+
+function getFilteredAuditItemsForExport() {
+  const query = String(searchInput.value || "").trim().toLocaleLowerCase("th");
+  return items.filter(item => {
+    const meta = item.meta || {};
+    const searchable = [
+      meta.auditNo,
+      meta.unit,
+      meta.line,
+      meta.level,
+      meta.auditor,
+      meta.auditee,
+      item.createdAt
+    ].map(value => String(value || "")).join(" ").toLocaleLowerCase("th");
+    return searchable.includes(query);
+  });
+}
+
+function exportAuditScore(item) {
+  const summary = item.summary || {};
+  const storedScore = Number(summary.scorePercent);
+  if (Number.isFinite(storedScore)) return storedScore;
+  const ok = Number(summary.ok || 0);
+  const observation = Number(summary.observe || 0);
+  const ng = Number(summary.ng || 0);
+  const scored = ok + observation + ng;
+  return scored ? Math.round(((ok * 2 + observation) / (scored * 2)) * 1000) / 10 : 0;
+}
+
+function exportExcel() {
+  requireAdmin();
+
+  if (!window.XLSX) {
+    alert("ไม่สามารถโหลดระบบสร้างไฟล์ Excel ได้ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่");
+    return;
+  }
+
+  const exportItems = getFilteredAuditItemsForExport();
+  if (!exportItems.length) {
+    alert("ไม่มีข้อมูล Audit สำหรับดาวน์โหลด");
+    return;
+  }
+
+  const summaryRows = [];
+  const detailRows = [];
+  const answerLabels = {
+    ok: "OK",
+    observe: "Observation",
+    ng: "NG",
+    na: "N/A"
+  };
+
+  exportItems.forEach((item, index) => {
+    const meta = item.meta || {};
+    const summary = item.summary || {};
+    const state = item.state || {};
+    const answers = state.answers || {};
+    const comments = state.comments || {};
+    const images = state.images || {};
+    const questions = state.questions || {};
+    const customQuestions = state.custom || {};
+    const signatures = item.signatures || {};
+    const auditNo = meta.auditNo || item.id || "";
+
+    summaryRows.push({
+      "No.": index + 1,
+      "Audit No.": auditNo,
+      "Submitted At": item.createdAt || "",
+      "Audit Date": meta.auditDate || "",
+      "Unit / Function": meta.unit || "",
+      "Line / Area": meta.line || "",
+      "Level": meta.level || "",
+      "Auditor": meta.auditor || "",
+      "Auditee": meta.auditee || "",
+      "Score (%)": exportAuditScore(item),
+      "OK": Number(summary.ok || 0),
+      "Observation": Number(summary.observe || 0),
+      "NG": Number(summary.ng || 0),
+      "Auditor Signature": signatures.auditor ? "Yes" : "No",
+      "Auditee Signature": signatures.auditee ? "Yes" : "No"
+    });
+
+    const questionIds = Array.from(new Set([
+      ...Object.keys(answers),
+      ...Object.keys(comments),
+      ...Object.keys(images),
+      ...Object.keys(questions),
+      ...Object.keys(customQuestions)
+    ])).sort((a, b) => {
+      const first = Number(String(a).replace(/\D/g, ""));
+      const second = Number(String(b).replace(/\D/g, ""));
+      if (Number.isFinite(first) && Number.isFinite(second) && first !== second) return first - second;
+      return String(a).localeCompare(String(b));
+    });
+
+    if (!questionIds.length) {
+      detailRows.push({
+        "Audit No.": auditNo,
+        "Audit Date": meta.auditDate || "",
+        "Line / Area": meta.line || "",
+        "Level": meta.level || "",
+        "Auditor": meta.auditor || "",
+        "Auditee": meta.auditee || "",
+        "Question ID": "",
+        "Question": "",
+        "Result": "",
+        "Comment": "",
+        "Evidence Image": "No"
+      });
+    } else {
+      questionIds.forEach(questionId => {
+        const answer = answers[questionId] || "";
+        detailRows.push({
+          "Audit No.": auditNo,
+          "Audit Date": meta.auditDate || "",
+          "Line / Area": meta.line || "",
+          "Level": meta.level || "",
+          "Auditor": meta.auditor || "",
+          "Auditee": meta.auditee || "",
+          "Question ID": questionId,
+          "Question": questions[questionId] || customQuestions[questionId] || questionId,
+          "Result": answerLabels[answer] || answer || "",
+          "Comment": comments[questionId] || "",
+          "Evidence Image": images[questionId] ? "Yes" : "No"
+        });
+      });
+    }
+  });
+
+  const workbook = XLSX.utils.book_new();
+  const summarySheet = XLSX.utils.json_to_sheet(summaryRows);
+  const detailSheet = XLSX.utils.json_to_sheet(detailRows);
+
+  summarySheet["!cols"] = [
+    {wch:6},{wch:20},{wch:24},{wch:14},{wch:20},{wch:36},{wch:10},{wch:22},
+    {wch:22},{wch:12},{wch:8},{wch:14},{wch:8},{wch:18},{wch:18}
+  ];
+  detailSheet["!cols"] = [
+    {wch:20},{wch:14},{wch:36},{wch:10},{wch:22},{wch:22},{wch:12},{wch:65},
+    {wch:14},{wch:45},{wch:16}
+  ];
+
+  XLSX.utils.book_append_sheet(workbook, summarySheet, "Audit Summary");
+  XLSX.utils.book_append_sheet(workbook, detailSheet, "Audit Details");
+
+  const now = new Date();
+  const datePart = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, "0"),
+    String(now.getDate()).padStart(2, "0")
+  ].join("-");
+
+  XLSX.writeFile(workbook, "Maintenance" + "_LPA_Audit_" + datePart + ".xlsx");
 }
 
 function render() {
@@ -933,6 +1096,8 @@ async function removeAudit(id, auditNumber) {
 }
 
 searchInput.addEventListener("input", render);
+
+document.getElementById("exportExcel").addEventListener("click", exportExcel);
 
 refreshButton.addEventListener("click", () => {
   loadAudits().catch(error => {
