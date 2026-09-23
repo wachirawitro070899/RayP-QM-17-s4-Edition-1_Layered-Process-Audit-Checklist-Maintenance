@@ -393,14 +393,6 @@ dialog::backdrop{
       >
 
       <button
-        class="btn"
-        id="exportExcel"
-        type="button"
-      >
-        ดาวน์โหลด Excel
-      </button>
-
-      <button
         class="btn primary"
         id="refresh"
         type="button"
@@ -629,7 +621,7 @@ function exportAuditScore(item) {
   return scored ? Math.round(((ok * 2 + observation) / (scored * 2)) * 1000) / 10 : 0;
 }
 
-function exportExcel() {
+function exportSingleAuditExcel(id) {
   requireAdmin();
 
   if (!window.XLSX) {
@@ -637,11 +629,19 @@ function exportExcel() {
     return;
   }
 
-  const exportItems = getFilteredAuditItemsForExport();
-  if (!exportItems.length) {
-    alert("ไม่มีข้อมูล Audit สำหรับดาวน์โหลด");
+  const item = items.find(row => String(row.id) === String(id));
+  if (!item) {
+    alert("ไม่พบข้อมูล Audit สำหรับดาวน์โหลด");
     return;
   }
+
+  const meta = item.meta || {};
+  const state = item.state || {};
+  const answers = state.answers || {};
+  const comments = state.comments || {};
+  const images = state.images || {};
+  const questions = state.questions || {};
+  const customQuestions = state.custom || {};
 
   const answerLabels = {
     ok: "OK",
@@ -650,118 +650,87 @@ function exportExcel() {
     na: "N/A"
   };
 
-  // 1 Auditor = 1 Excel sheet. No Summary sheet.
-  const rowsByAuditor = new Map();
+  const questionIds = Array.from(new Set([
+    ...Object.keys(answers),
+    ...Object.keys(comments),
+    ...Object.keys(images),
+    ...Object.keys(questions),
+    ...Object.keys(customQuestions)
+  ])).sort((a, b) => {
+    const first = Number(String(a).replace(/\D/g, ""));
+    const second = Number(String(b).replace(/\D/g, ""));
+    if (Number.isFinite(first) && Number.isFinite(second) && first !== second) return first - second;
+    return String(a).localeCompare(String(b));
+  });
 
-  exportItems.forEach((item) => {
-    const meta = item.meta || {};
-    const state = item.state || {};
-    const answers = state.answers || {};
-    const comments = state.comments || {};
-    const images = state.images || {};
-    const questions = state.questions || {};
-    const customQuestions = state.custom || {};
+  const baseRow = {
+    "Submitted At": item.createdAt || "",
+    "Audit Date": meta.auditDate || "",
+    "Unit / Function": meta.unit || "",
+    "Line / Area": meta.line || "",
+    "Level": meta.level || "",
+    "Auditor": meta.auditor || "",
+    "Auditee": meta.auditee || ""
+  };
 
-    const auditorName = String(meta.auditor || "ไม่ระบุ Auditor").trim() || "ไม่ระบุ Auditor";
-    if (!rowsByAuditor.has(auditorName)) rowsByAuditor.set(auditorName, []);
-    const auditorRows = rowsByAuditor.get(auditorName);
-
-    const questionIds = Array.from(new Set([
-      ...Object.keys(answers),
-      ...Object.keys(comments),
-      ...Object.keys(images),
-      ...Object.keys(questions),
-      ...Object.keys(customQuestions)
-    ])).sort((a, b) => {
-      const first = Number(String(a).replace(/\D/g, ""));
-      const second = Number(String(b).replace(/\D/g, ""));
-      if (Number.isFinite(first) && Number.isFinite(second) && first !== second) return first - second;
-      return String(a).localeCompare(String(b));
-    });
-
-    const baseRow = {
-      "Submitted At": item.createdAt || "",
-      "Audit Date": meta.auditDate || "",
-      "Unit / Function": meta.unit || "",
-      "Line / Area": meta.line || "",
-      "Level": meta.level || "",
-      "Auditor": meta.auditor || "",
-      "Auditee": meta.auditee || ""
-    };
-
-    if (!questionIds.length) {
-      auditorRows.push({
+  const detailRows = questionIds.length
+    ? questionIds.map(questionId => {
+        const answer = answers[questionId] || "";
+        return {
+          ...baseRow,
+          "Question": questions[questionId] || customQuestions[questionId] || questionId,
+          "Result": answerLabels[answer] || answer || "",
+          "Comment": comments[questionId] || "",
+          "Evidence Image": images[questionId] ? "Yes" : "No"
+        };
+      })
+    : [{
         ...baseRow,
         "Question": "",
         "Result": "",
         "Comment": "",
         "Evidence Image": "No"
-      });
-      return;
-    }
-
-    questionIds.forEach((questionId) => {
-      const answer = answers[questionId] || "";
-      auditorRows.push({
-        ...baseRow,
-        "Question": questions[questionId] || customQuestions[questionId] || questionId,
-        "Result": answerLabels[answer] || answer || "",
-        "Comment": comments[questionId] || "",
-        "Evidence Image": images[questionId] ? "Yes" : "No"
-      });
-    });
-  });
+      }];
 
   const workbook = XLSX.utils.book_new();
-  const usedSheetNames = new Set();
+  const sheet = XLSX.utils.json_to_sheet(detailRows);
+  sheet["!cols"] = [
+    {wch:24},
+    {wch:14},
+    {wch:20},
+    {wch:36},
+    {wch:10},
+    {wch:22},
+    {wch:22},
+    {wch:65},
+    {wch:14},
+    {wch:45},
+    {wch:16}
+  ];
+  XLSX.utils.book_append_sheet(workbook, sheet, "Layered Audit");
 
-  function makeUniqueSheetName(name) {
-    let base = String(name || "Auditor")
-      .replace(/[\\\/?*\[\]:]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
+  const safePart = value => String(value || "")
+    .replace(/[\\\/:*?"<>|]/g, "-")
+    .replace(/\s+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^[_-]+|[_-]+$/g, "");
 
-    if (!base) base = "Auditor";
-    base = base.slice(0, 31);
+  const auditor = safePart(meta.auditor) || "Auditor";
+  const auditDate = safePart(meta.auditDate) || "NoDate";
+  const sentTime = (() => {
+    const d = new Date(item.createdAt || "");
+    if (Number.isNaN(d.getTime())) return "";
+    return [
+      String(d.getHours()).padStart(2, "0"),
+      String(d.getMinutes()).padStart(2, "0")
+    ].join("-");
+  })();
 
-    let sheetName = base;
-    let suffix = 2;
-    while (usedSheetNames.has(sheetName.toLowerCase())) {
-      const tail = " (" + suffix + ")";
-      sheetName = base.slice(0, 31 - tail.length) + tail;
-      suffix += 1;
-    }
-
-    usedSheetNames.add(sheetName.toLowerCase());
-    return sheetName;
-  }
-
-  rowsByAuditor.forEach((rows, auditorName) => {
-    const sheet = XLSX.utils.json_to_sheet(rows);
-    sheet["!cols"] = [
-      {wch:24},
-      {wch:14},
-      {wch:20},
-      {wch:36},
-      {wch:10},
-      {wch:22},
-      {wch:22},
-      {wch:65},
-      {wch:14},
-      {wch:45},
-      {wch:16}
-    ];
-    XLSX.utils.book_append_sheet(workbook, sheet, makeUniqueSheetName(auditorName));
-  });
-
-  const now = new Date();
-  const datePart = [
-    now.getFullYear(),
-    String(now.getMonth() + 1).padStart(2, "0"),
-    String(now.getDate()).padStart(2, "0")
-  ].join("-");
-
-  XLSX.writeFile(workbook, "Maintenance_LPA_Audit_By_Auditor_" + datePart + ".xlsx");
+  const suffix = sentTime ? "_" + sentTime : "";
+  XLSX.writeFile(
+    workbook,
+    "Maintenance_LPA_" + auditor + "_" + auditDate + suffix + ".xlsx"
+  );
 }
 function render() {
   const searchValue =
@@ -813,6 +782,14 @@ function render() {
           </td>
 
           <td class="right">
+            <button
+              class="btn"
+              type="button"
+              onclick="exportSingleAuditExcel('${escapeHtml(item.id)}')"
+            >
+              ดาวน์โหลดไฟล์ Excel
+            </button>
+
             <button
               class="btn"
               type="button"
@@ -1104,8 +1081,6 @@ async function removeAudit(id, auditNumber) {
 }
 
 searchInput.addEventListener("input", render);
-
-document.getElementById("exportExcel").addEventListener("click", exportExcel);
 
 refreshButton.addEventListener("click", () => {
   loadAudits().catch(error => {
