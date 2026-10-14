@@ -319,7 +319,7 @@ dialog::backdrop{
     grid-template-columns:1fr;
   }
 }
-</style>
+.level-tabs{display:flex;gap:9px;flex-wrap:wrap;margin:18px 0 4px}.level-tab{font:inherit;padding:11px 18px;border:1px solid var(--line);border-radius:10px;background:white;color:#7f1d1d;cursor:pointer;font-weight:700}.level-tab.active{background:#991b1b;color:#fff;border-color:#991b1b}.level-context{color:var(--muted);font-size:13px;margin:8px 0 0}@media(max-width:600px){.level-tab{flex:1 1 42%;text-align:center}}</style>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
@@ -362,7 +362,7 @@ dialog::backdrop{
     กำลังตรวจสอบสิทธิ์...
   </p>
 
-  <div class="cards">
+  <nav class="level-tabs" aria-label="เลือก Audit Level"><button type="button" class="level-tab active" data-level="all" aria-pressed="true">ทั้งหมด</button><button type="button" class="level-tab" data-level="Level 1" aria-pressed="false">Level 1</button><button type="button" class="level-tab" data-level="Level 2" aria-pressed="false">Level 2</button><button type="button" class="level-tab" data-level="Level 3" aria-pressed="false">Level 3</button></nav><p class="level-context" id="levelContext">แสดงข้อมูล Audit ทุก Level</p><div class="cards">
     <div class="card">
       <span>รายการทั้งหมด</span>
       <b id="cTotal">0</b>
@@ -446,6 +446,11 @@ dialog::backdrop{
 const DATABASE_PATH = "logisticLpaAudits";
 
 let items = [];
+let selectedLevel='all';
+function matchesLevel(item){return selectedLevel==='all'||String(item.meta?.level||'').trim().toLowerCase()===selectedLevel.toLowerCase()}
+function setLevel(level){selectedLevel=level;document.querySelectorAll('.level-tab').forEach(button=>{const active=button.dataset.level===level;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active))});document.getElementById('levelContext').textContent=level==='all'?'แสดงข้อมูล Audit ทุก Level':'แสดงเฉพาะข้อมูล Audit '+level;render()}
+document.querySelectorAll('.level-tab').forEach(button=>button.addEventListener('click',()=>setLevel(button.dataset.level)));
+
 
 const searchInput = document.getElementById("search");
 const rowsElement = document.getElementById("rows");
@@ -596,6 +601,7 @@ function calculateAuditScore(item) {
 function getFilteredAuditItemsForExport() {
   const query = String(searchInput.value || "").trim().toLocaleLowerCase("th");
   return items.filter(item => {
+    if(!matchesLevel(item))return false;
     const meta = item.meta || {};
     const searchable = [
       meta.auditNo,
@@ -737,6 +743,7 @@ function render() {
     searchInput.value.trim().toLowerCase();
 
   const filteredItems = items.filter(item => {
+    if(!matchesLevel(item))return false;
     const meta = getMeta(item);
 
     return [
@@ -816,21 +823,22 @@ function render() {
 
   emptyElement.hidden = filteredItems.length > 0;
 
-  totalElement.textContent = items.length;
+  const levelItems = items.filter(matchesLevel);
+  totalElement.textContent = levelItems.length;
 
-  okElement.textContent = items.reduce(
+  okElement.textContent = levelItems.reduce(
     (total, item) =>
       total + Number(getSummary(item).ok || 0),
     0
   );
 
-  observationElement.textContent = items.reduce(
+  observationElement.textContent = levelItems.reduce(
     (total, item) =>
       total + Number(getSummary(item).observe || 0),
     0
   );
 
-  ngElement.textContent = items.reduce(
+  ngElement.textContent = levelItems.reduce(
     (total, item) =>
       total + Number(getSummary(item).ng || 0),
     0
