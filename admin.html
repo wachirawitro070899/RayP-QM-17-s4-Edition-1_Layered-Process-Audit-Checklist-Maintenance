@@ -91,7 +91,7 @@ body{
 
 .cards{
   display:grid;
-  grid-template-columns:repeat(4,1fr);
+  grid-template-columns:minmax(220px,320px);
   gap:12px;
   margin:18px 0;
 }
@@ -362,27 +362,7 @@ dialog::backdrop{
     กำลังตรวจสอบสิทธิ์...
   </p>
 
-  <nav class="level-tabs" aria-label="เลือก Audit Level"><button type="button" class="level-tab active" data-level="all" aria-pressed="true">ทั้งหมด</button><button type="button" class="level-tab" data-level="Level 1" aria-pressed="false">Level 1</button><button type="button" class="level-tab" data-level="Level 2" aria-pressed="false">Level 2</button><button type="button" class="level-tab" data-level="Level 3" aria-pressed="false">Level 3</button></nav><p class="level-context" id="levelContext">แสดงข้อมูล Audit ทุก Level</p><div class="cards">
-    <div class="card">
-      <span>รายการทั้งหมด</span>
-      <b id="cTotal">0</b>
-    </div>
-
-    <div class="card">
-      <span>OK รวม</span>
-      <b id="cOk">0</b>
-    </div>
-
-    <div class="card">
-      <span>Observation รวม</span>
-      <b id="cObs">0</b>
-    </div>
-
-    <div class="card">
-      <span>NG รวม</span>
-      <b id="cNg">0</b>
-    </div>
-  </div>
+  <nav class="level-tabs" aria-label="เลือก Audit Level"><button type="button" class="level-tab active" data-level="all" aria-pressed="true">ทั้งหมด</button><button type="button" class="level-tab" data-level="Level 1" aria-pressed="false">Level 1</button><button type="button" class="level-tab" data-level="Level 2" aria-pressed="false">Level 2</button><button type="button" class="level-tab" data-level="Level 3" aria-pressed="false">Level 3</button></nav><p class="level-context" id="levelContext">แสดงข้อมูล Audit ทุก Level</p><div class="cards"><div class="card"><span>NG รวม</span><b id="cNg">0</b></div></div>
 
   <section class="panel">
     <div class="toolbar">
@@ -824,20 +804,6 @@ function render() {
   emptyElement.hidden = filteredItems.length > 0;
 
   const levelItems = items.filter(matchesLevel);
-  totalElement.textContent = levelItems.length;
-
-  okElement.textContent = levelItems.reduce(
-    (total, item) =>
-      total + Number(getSummary(item).ok || 0),
-    0
-  );
-
-  observationElement.textContent = levelItems.reduce(
-    (total, item) =>
-      total + Number(getSummary(item).observe || 0),
-    0
-  );
-
   ngElement.textContent = levelItems.reduce(
     (total, item) =>
       total + Number(getSummary(item).ng || 0),
