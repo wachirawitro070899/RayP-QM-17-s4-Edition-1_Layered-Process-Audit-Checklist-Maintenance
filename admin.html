@@ -319,9 +319,51 @@ dialog::backdrop{
     grid-template-columns:1fr;
   }
 }
-.level-tabs{display:flex;gap:9px;flex-wrap:wrap;margin:18px 0 4px}.level-tab{font:inherit;padding:11px 18px;border:1px solid var(--line);border-radius:10px;background:white;color:#7f1d1d;cursor:pointer;font-weight:700}.level-tab.active{background:#991b1b;color:#fff;border-color:#991b1b}.level-context{color:var(--muted);font-size:13px;margin:8px 0 0}@media(max-width:600px){.level-tab{flex:1 1 42%;text-align:center}}</style>
+.level-tabs{display:flex;gap:9px;flex-wrap:wrap;margin:18px 0 4px}.level-tab{font:inherit;padding:11px 18px;border:1px solid var(--line);border-radius:10px;background:white;color:#7f1d1d;cursor:pointer;font-weight:700}.level-tab.active{background:#991b1b;color:#fff;border-color:#991b1b}.level-context{color:var(--muted);font-size:13px;margin:8px 0 0}@media(max-width:600px){.level-tab{flex:1 1 42%;text-align:center}}.ng-card-button{display:block;width:100%;padding:0;text-align:left;border:0;background:transparent;color:inherit;font:inherit;cursor:pointer}.ng-card-button:focus-visible{outline:3px solid #dc2626;outline-offset:5px;border-radius:6px}.ng-card-hint{display:block;margin-top:5px;color:#991b1b;font-size:12px;font-weight:600}.ng-auditor-group{margin:12px 0;padding:14px;border:1px solid var(--line);border-radius:10px}.ng-auditor-head{display:flex;justify-content:space-between;gap:12px;font-weight:700}.ng-audit-entry{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--line)}.ng-audit-entry:last-child{border-bottom:0}.ng-audit-meta{font-size:12px;color:var(--muted);margin-top:4px}</style>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js">
+function openNgAuditorDetails(){
+  requireAdmin();
+  const dialog=document.getElementById('ngAuditorDialog');
+  const body=document.getElementById('ngAuditorBody');
+  const audits=items.filter(item=>matchesLevel(item)&&Number(item.summary?.ng||0)>0);
+  const groups=new Map();
+  for(const audit of audits){
+    const name=String(audit.meta?.auditor||'ไม่ระบุ Auditor').trim()||'ไม่ระบุ Auditor';
+    if(!groups.has(name))groups.set(name,{name,count:0,audits:[]});
+    const group=groups.get(name);
+    group.count+=Number(audit.summary?.ng||0);
+    group.audits.push(audit);
+  }
+  const total=audits.reduce((sum,audit)=>sum+Number(audit.summary?.ng||0),0);
+  document.getElementById('ngAuditorTitle').textContent='รายละเอียด NG ตาม Auditor ('+total+' NG)';
+  body.replaceChildren();
+  if(!groups.size){const empty=document.createElement('p');empty.className='empty';empty.textContent='ไม่มีรายการ NG ใน Level ที่เลือก';body.appendChild(empty)}
+  for(const group of [...groups.values()].sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name))){
+    const section=document.createElement('section');section.className='ng-auditor-group';
+    const head=document.createElement('div');head.className='ng-auditor-head';
+    const who=document.createElement('span');who.textContent='Auditor: '+group.name;
+    const count=document.createElement('span');count.textContent=group.count+' NG';
+    head.append(who,count);section.appendChild(head);
+    for(const audit of group.audits){
+      const entry=document.createElement('div');entry.className='ng-audit-entry';
+      const description=document.createElement('div');
+      const title=document.createElement('b');title.textContent=(audit.meta?.line||'ไม่ระบุ Area')+' · '+Number(audit.summary?.ng||0)+' NG';
+      const meta=document.createElement('div');meta.className='ng-audit-meta';
+      meta.textContent='วันที่ Audit: '+(audit.meta?.auditDate||'-')+' · '+(audit.meta?.level||'-');
+      description.append(title,meta);
+      const button=document.createElement('button');button.type='button';button.className='btn';
+      button.textContent='ดูรายละเอียด Audit';
+      button.addEventListener('click',()=>{dialog.close();viewAudit(String(audit.id))});
+      entry.append(description,button);section.appendChild(entry);
+    }
+    body.appendChild(section);
+  }
+  dialog.showModal();
+}
+document.getElementById('openNgAuditors').addEventListener('click',openNgAuditorDetails);
+document.getElementById('closeNgAuditors').addEventListener('click',()=>document.getElementById('ngAuditorDialog').close());
+</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script></head>
@@ -362,7 +404,7 @@ dialog::backdrop{
     กำลังตรวจสอบสิทธิ์...
   </p>
 
-  <nav class="level-tabs" aria-label="เลือก Audit Level"><button type="button" class="level-tab active" data-level="all" aria-pressed="true">ทั้งหมด</button><button type="button" class="level-tab" data-level="Level 1" aria-pressed="false">Level 1</button><button type="button" class="level-tab" data-level="Level 2" aria-pressed="false">Level 2</button><button type="button" class="level-tab" data-level="Level 3" aria-pressed="false">Level 3</button></nav><p class="level-context" id="levelContext">แสดงข้อมูล Audit ทุก Level</p><div class="cards"><div class="card"><span>NG รวม</span><b id="cNg">0</b></div></div>
+  <nav class="level-tabs" aria-label="เลือก Audit Level"><button type="button" class="level-tab active" data-level="all" aria-pressed="true">ทั้งหมด</button><button type="button" class="level-tab" data-level="Level 1" aria-pressed="false">Level 1</button><button type="button" class="level-tab" data-level="Level 2" aria-pressed="false">Level 2</button><button type="button" class="level-tab" data-level="Level 3" aria-pressed="false">Level 3</button></nav><p class="level-context" id="levelContext">แสดงข้อมูล Audit ทุก Level</p><div class="cards"><div class="card"><button type="button" id="openNgAuditors" class="ng-card-button" aria-label="ดูจำนวน NG แยกตาม Auditor"><span>NG รวม</span><b id="cNg">0</b><span class="ng-card-hint">กดเพื่อดู NG แยกตาม Auditor →</span></button></div></div>
 
   <section class="panel">
     <div class="toolbar">
@@ -406,7 +448,7 @@ dialog::backdrop{
   </section>
 </main>
 
-<dialog id="detail">
+<dialog id="ngAuditorDialog"><div class="modal-head"><b id="ngAuditorTitle">รายละเอียด NG ตาม Auditor</b><button type="button" class="btn" id="closeNgAuditors">ปิด</button></div><div class="modal-body" id="ngAuditorBody"></div></dialog><dialog id="detail">
   <div class="modal-head">
     <b id="detailTitle">Audit detail</b>
 
